@@ -23,6 +23,12 @@
       "path": "./config.db"
     }
   },
+  "auth_config": {
+    "admin_username": "admin",
+    "admin_password": "bifrost123",
+    "is_enabled": true,
+    "disable_auth_on_inference": true
+  },
   "logs_store": {
     "enabled": true,
     "type": "sqlite",
