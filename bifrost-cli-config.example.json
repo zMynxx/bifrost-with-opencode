@@ -1,0 +1,8 @@
+{
+  "base_url": "http://localhost:8080",
+  "virtual_key": "",
+  "default_harness": "opencode",
+  "default_model": "ollama/qwen2.5-coder:1.5b",
+  "auto_install_harness": null,
+  "auto_attach_mcp": null
+}

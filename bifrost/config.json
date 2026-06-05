@@ -1,0 +1,48 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+  "client": {
+    "enable_logging": true,
+    "drop_excess_requests": false
+  },
+  "plugins": [
+    {
+      "enabled": true,
+      "name": "otel",
+      "config": {
+        "service_name": "bifrost",
+        "collector_url": "otel-collector:4317",
+        "trace_type": "genai_extension",
+        "protocol": "grpc"
+      }
+    }
+  ],
+  "config_store": {
+    "enabled": true,
+    "type": "sqlite",
+    "config": {
+      "path": "./config.db"
+    }
+  },
+  "logs_store": {
+    "enabled": true,
+    "type": "sqlite",
+    "config": {
+      "path": "./logs.db"
+    }
+  },
+  "providers": {
+    "ollama": {
+      "keys": [
+        {
+          "name": "ollama-local",
+          "value": "",
+          "models": ["*"],
+          "weight": 1.0,
+          "ollama_key_config": {
+            "url": "http://ollama:11434"
+          }
+        }
+      ]
+    }
+  }
+}

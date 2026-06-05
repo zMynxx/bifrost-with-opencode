@@ -1,0 +1,44 @@
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config
+bifrost-cli-config.json
+bifrost-cli-state.json
+
+# Logs
+*.log
+
+# Docker
+.docker/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# Sisyphus runtime
+.sisyphus/run-continuation/
+
+# Weave runtime
+.weave/runtime/
+
+# Clickhouse
+clickhouse/data/
+clickhouse/logs/

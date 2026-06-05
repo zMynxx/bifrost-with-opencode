@@ -1,0 +1,105 @@
+services:
+  # ─────────────────────────────────────────────
+  # Bifrost AI Gateway
+  # ─────────────────────────────────────────────
+  bifrost:
+    image: maximhq/bifrost:latest
+    container_name: bifrost
+    ports:
+      - "8080:8080"          # Gateway HTTP API + Web UI
+    volumes:
+      - ./bifrost/config.json:/app/data/config.json
+      - bifrost-data:/app/data   # Persists logs.db, config.db
+    environment:
+      - APP_PORT=8080
+      - APP_HOST=0.0.0.0
+      - LOG_LEVEL=info
+      - LOG_STYLE=pretty
+    depends_on:
+      otel-collector:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ─────────────────────────────────────────────
+  # OpenTelemetry Collector (contrib)
+  #  - Receives OTLP from Bifrost
+  #  - Exports traces/metrics/logs to ClickHouse
+  # ─────────────────────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command:
+      - "--config=/etc/otelcol-config.yaml"
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-config.yaml
+    ports:
+      - "4317:4317"          # OTLP gRPC
+      - "4318:4318"          # OTLP HTTP
+      - "8888:8888"          # Collector self-metrics
+      - "13133:13133"        # Health check
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # ClickHouse - Telemetry Database
+  # ─────────────────────────────────────────────
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    ports:
+      - "8123:8123"          # HTTP interface (REST API)
+      - "9000:9000"          # Native TCP interface
+      - "9009:9009"          # Inter-server replication
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - CLICKHOUSE_DB=otel
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─────────────────────────────────────────────
+  # Ollama - Local open-source models
+  # ─────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_KEEP_ALIVE=24h
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  bifrost-data:
+  clickhouse-data:
+  ollama-data:

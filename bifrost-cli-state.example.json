@@ -1,0 +1,16 @@
+{
+  "profiles": [
+    {
+      "id": "default",
+      "name": "Default",
+      "base_url": "http://localhost:8080"
+    }
+  ],
+  "last_profile_id": "default",
+  "selections": {
+    "default": {
+      "harness": "opencode",
+      "model": "ollama/qwen2.5-coder:1.5b"
+    }
+  }
+}
