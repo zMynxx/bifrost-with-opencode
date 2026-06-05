@@ -33,6 +33,9 @@ build/
 venv/
 *.egg
 
+# SkilLock binary (don't commit the downloaded tool)
+skil-lock
+
 # Sisyphus runtime
 .sisyphus/run-continuation/
 
