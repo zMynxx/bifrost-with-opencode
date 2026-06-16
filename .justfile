@@ -1,6 +1,10 @@
 # ─────────────────────────────────────────────────────
-# Bifrost + OpenTelemetry + ClickHouse + Ollama
+# Bifrost + OpenTelemetry + ClickHouse + Headroom
 # ─────────────────────────────────────────────────────
+
+# Use Podman socket (not Docker Desktop)
+export DOCKER_HOST := "unix:///var/run/docker.sock"
+export DOCKER_CONFIG := "/tmp"
 
 # ── Service Management ────────────────────────────────
 
@@ -41,34 +45,19 @@ refresh:
     docker-compose up -d bifrost
     echo "Bifrost recreated with fresh config."
 
-# ── Model Management ─────────────────────────────────
-
-# Pull a new model into Ollama (usage: just pull MODEL)
-pull model="qwen2.5-coder:1.5b":
-    docker-compose exec ollama ollama pull {{model}}
+# ── Models ──────────────────────────────────────────
 
 # List models available through Bifrost
 models:
     curl -s http://localhost:8080/v1/models | python3 -m json.tool
 
-# List models in Ollama directly
-ollama-models:
-    docker-compose exec ollama ollama list
-
 # ── Testing ──────────────────────────────────────────
 
-# Send a test chat completion
+# Send a test chat completion through Bifrost
 test msg="Say hello in one word":
     curl -s -X POST http://localhost:8080/v1/chat/completions \
       -H "Content-Type: application/json" \
-      -d '{"model":"ollama/qwen2.5-coder:1.5b","messages":[{"role":"user","content":"{{msg}}"}]}' \
-      | python3 -m json.tool
-
-# Test through the OpenAI-compatible endpoint
-test-openai msg="Say hello in one word":
-    curl -s -X POST http://localhost:8080/openai/chat/completions \
-      -H "Content-Type: application/json" \
-      -d '{"model":"ollama/qwen2.5-coder:1.5b","messages":[{"role":"user","content":"{{msg}}"}]}' \
+      -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"{{msg}}"}]}' \
       | python3 -m json.tool
 
 # ── Observability ────────────────────────────────────
@@ -102,8 +91,7 @@ check:
     curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8080/health
     echo "=== ClickHouse ==="
     curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8123/ping
-    echo "=== Ollama ==="
-    curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:11434
+
     echo "=== OTel Collector ==="
     curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:13133
     echo ""
@@ -119,18 +107,23 @@ ch-ui:
 
 # ── First-Time Setup ────────────────────────────────
 
-# Full first-time setup: start stack, pull model, init bifrost-cli
-setup model="qwen2.5-coder:1.5b":
+# First-time setup: start stack + init bifrost-cli config
+setup:
     just up
-    echo "Pulling {{model}}..."
-    docker-compose exec -T ollama ollama pull {{model}}
     echo "Initializing bifrost-cli config..."
     just init-cli
     echo ""
     echo "✅ Stack is up at http://localhost:8080"
-    echo "✅ Model {{model}} is ready"
-    echo "✅ bifrost-cli configured — run 'bifrost' to start"
-    just test
+
+# Start stack and launch OpenCode
+opencode:
+    just up
+    echo "→ Stack is up"
+    echo "→ Headroom proxy at http://localhost:8787 (compresses LLM traffic)"
+    echo "→ Bifrost at http://localhost:8080"
+    echo "→ Launching OpenCode via bifrost-cli..."
+    echo ""
+    PATH="$HOME/.bifrost/bin:$PATH" bifrost
 
 # Init bifrost-cli user config (~/.bifrost/)
 init-cli:
@@ -139,11 +132,36 @@ init-cli:
     cp -n bifrost-cli-state.example.json ~/.bifrost/state.json 2>/dev/null && echo "Created ~/.bifrost/state.json" || echo "~/.bifrost/state.json already exists"
     echo "Config ready at ~/.bifrost/"
 
-# ── Supported Models ─────────────────────────────────
-# qwen2.5-coder:1.5b  — ~986MB, 32K context, Q4_K_M
-# Pull more via: just pull <model>
-# Popular options:
-#   qwen2.5-coder:7b      — ~4.7GB, stronger coding
-#   llama3.2:3b           — ~2.0GB, general purpose
-#   mistral:7b            — ~4.1GB, fast general
-#   tinyllama:latest      — ~637MB, very fast, small
+# ── Headroom ────────────────────────────────────
+
+# Check headroom health
+headroom-health:
+    curl -s http://localhost:8787/health | python3 -m json.tool
+
+# Headroom compression stats
+headroom-stats:
+    curl -s http://localhost:8787/stats | python3 -m json.tool
+
+# Headroom compression history
+headroom-history:
+    curl -s "http://localhost:8787/stats-history?format=json" | python3 -m json.tool
+
+# Install Headroom MCP server so OpenCode can use headroom_compress / headroom_retrieve
+# Requires: pip install "headroom-ai[mcp]"
+headroom-mcp-install:
+    headroom mcp install
+
+# Test chat through Headroom proxy (compresses then routes through Bifrost)
+headroom-test msg="Say hello in one word":
+    curl -s -X POST http://localhost:8787/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"{{msg}}"}]}' \
+      | python3 -m json.tool
+
+# Tail Headroom logs
+headroom-logs:
+    docker-compose logs --tail=50 -f headroom
+
+# Install headroom-ai Python package locally (for MCP, proxy CLI, or library use)
+headroom-install-python:
+    pip install "headroom-ai[proxy,mcp]"

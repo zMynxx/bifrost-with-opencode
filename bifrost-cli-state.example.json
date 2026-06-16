@@ -10,7 +10,7 @@
   "selections": {
     "default": {
       "harness": "opencode",
-      "model": "ollama/qwen2.5-coder:1.5b"
+      "model": "github-models/gpt-4o-mini"
     }
   }
 }

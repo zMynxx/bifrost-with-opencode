@@ -5,6 +5,18 @@ schema_version: "0.1"
 generated_at: 2026-06-05T12:05:22Z
 generated_by: skil-lock 0.1.2
 skills:
+  ponytail:
+    runtime: universal
+    source_path: .agents/skills/ponytail/SKILL.md
+    version: ""
+    content_hash: sha256:1b9eaae4b639a2a6c311ad88a83e2bb0b38a612c17c84e8ac0b7603ec325604e
+    behavior:
+      shell_commands: []
+      network_urls: []
+      file_reads: []
+      file_writes: []
+      allowed_tools: []
+      bundled_scripts: []
   grill-me:
     runtime: claude
     source_path: .claude/skills/grill-me/SKILL.md
