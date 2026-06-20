@@ -45,3 +45,7 @@ skil-lock
 # Clickhouse
 clickhouse/data/
 clickhouse/logs/
+
+# Gentle-AI workspace state
+.gentle/
+state.json
