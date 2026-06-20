@@ -161,6 +161,22 @@ setup:
     echo ""
     echo "✅ Stack is up at http://localhost:8080"
 
+# ── OpenCode + Claude ────────────────────────────────
+
+# Install the opencode-with-claude plugin globally
+claude-plugin-install:
+    npm install -g opencode-with-claude
+    echo "✅ opencode-with-claude plugin installed"
+
+# Authenticate with Claude Max (one-time OAuth login)
+claude-login:
+    npm install -g @anthropic-ai/claude-code
+    claude login
+
+# Check Claude authentication status
+claude-status:
+    claude auth status
+
 # Start stack and launch OpenCode
 opencode:
     just up
