@@ -18,8 +18,8 @@ skills:
       allowed_tools: []
       bundled_scripts: []
   grill-me:
-    runtime: claude
-    source_path: .claude/skills/grill-me/SKILL.md
+    runtime: universal
+    source_path: .agents/skills/grill-me/SKILL.md
     version: ""
     content_hash: sha256:74147eb6010a65957efef2b9e0f0b3ff935c1def7fc117697151b1d0f3610556
     behavior:
