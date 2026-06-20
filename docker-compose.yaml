@@ -37,8 +37,10 @@ services:
     container_name: otel-collector
     command:
       - "--config=/etc/otelcol-config.yaml"
+    env_file:
+      - ./opentelemetry/.env
     volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol-config.yaml
+      - ./opentelemetry/otel-collector-config.yaml:/etc/otelcol-config.yaml
     ports:
       - "4317:4317"          # OTLP gRPC
       - "4318:4318"          # OTLP HTTP
