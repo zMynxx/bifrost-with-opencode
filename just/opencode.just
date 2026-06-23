@@ -1,10 +1,8 @@
 # ── OpenCode + Claude + Gentle-AI ─────────────
 
-# First-time setup: start stack + init bifrost-cli config
+# First-time setup: start stack (config auto-seeded by discover-models.py on first run)
 setup:
     just up
-    echo "Initializing bifrost-cli config..."
-    just init-cli
     echo ""
     echo "✅ Stack is up at http://localhost:8080"
 
@@ -34,12 +32,7 @@ opencode:
     #PATH="$HOME/.bifrost/bin:$PATH" bifrost
     bifrost
 
-# Init bifrost-cli user config (~/.bifrost/)
-init-cli:
-    mkdir -p ~/.bifrost
-    cp -n bifrost/bifrost-cli-config.example.json ~/.bifrost/config.json 2>/dev/null && echo "Created ~/.bifrost/config.json" || echo "~/.bifrost/config.json already exists"
-    cp -n bifrost/bifrost-cli-state.example.json ~/.bifrost/state.json 2>/dev/null && echo "Created ~/.bifrost/state.json" || echo "~/.bifrost/state.json already exists"
-    echo "Config ready at ~/.bifrost/"
+# (obsolete — discover-models.py auto-seeds from example templates)
 
 # ── Gentle-AI (Spec-Driven Development) ───────
 
@@ -77,9 +70,9 @@ gentle-ai-sync profile="":
 # Create an OpenCode SDD profile with per-phase models via Bifrost
 # Usage: just gentle-ai-profile name="default" design="gpt-4o" implement="gpt-4o-mini" explore="gpt-4o-mini"
 gentle-ai-profile name="default" design="gpt-4o" implement="gpt-4o-mini" explore="gpt-4o-mini":
-    gentle-ai sync --profile {{name}}:github-models/{{design}}
-    gentle-ai sync --profile-phase {{name}}:sdd-design:github-models/{{design}}
-    gentle-ai sync --profile-phase {{name}}:sdd-implement:github-models/{{implement}}
-    gentle-ai sync --profile-phase {{name}}:sdd-explore:github-models/{{explore}}
+    gentle-ai sync --profile {{name}}:github-copilot/{{design}}
+    gentle-ai sync --profile-phase {{name}}:sdd-design:github-copilot/{{design}}
+    gentle-ai sync --profile-phase {{name}}:sdd-implement:github-copilot/{{implement}}
+    gentle-ai sync --profile-phase {{name}}:sdd-explore:github-copilot/{{explore}}
     echo "✅ SDD profile '{{name}}' created with Bifrost models"
     echo "→ Press Tab in OpenCode to switch profiles"

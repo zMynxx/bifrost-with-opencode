@@ -15,6 +15,7 @@ import 'just/otel.just'
 import 'just/headroom.just'
 import 'just/opencode.just'
 import 'just/diagnostics.just'
+import 'just/skills.just'
 
 # ── Default: Fuzzy Finder Selector ───────────────────
 

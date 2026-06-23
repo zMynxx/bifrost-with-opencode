@@ -2,7 +2,7 @@
   "base_url": "http://localhost:8080",
   "virtual_key": "",
   "default_harness": "opencode",
-  "default_model": "github-models/gpt-4o-mini",
+  "default_model": "github-copilot/gpt-4o-mini",
   "auto_install_harness": null,
   "auto_attach_mcp": null
 }

@@ -1,0 +1,13 @@
+# SkilLock policy
+mode: warn
+
+require_approval:
+  - shell_commands
+
+protected_paths:
+  - .env
+  - "**/*.pem"
+  - "**/secrets/**"
+  - "**/*.key"
+
+allowed_domains: []

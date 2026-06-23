@@ -15,7 +15,8 @@ services:
       - APP_HOST=0.0.0.0
       - LOG_LEVEL=info
       - LOG_STYLE=pretty
-      - GH_TOKEN=${GH_TOKEN}
+    env_file:
+      - ./bifrost/.env
     depends_on:
       otel-collector:
         condition: service_started

@@ -16,13 +16,39 @@ import argparse
 import json
 import os
 import sys
+from pathlib import Path
 import urllib.request
 import urllib.error
 
-BIFROST_URL = os.environ.get("BIFROST_URL", "http://localhost:8080")
-CLI_CONFIG_DIR = os.path.expanduser("~/.bifrost")
-CLI_CONFIG_PATH = os.path.join(CLI_CONFIG_DIR, "config.json")
-CLI_STATE_PATH = os.path.join(CLI_CONFIG_DIR, "state.json")
+from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+class Settings(BaseSettings):
+    bifrost_url: str = "http://localhost:8080"
+    openai_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    github_api_key: Optional[str] = None
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_session_token: Optional[str] = None
+    aws_region: Optional[str] = None
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", "../.env"],
+        extra="ignore",
+    )
+
+settings = Settings()
+BIFROST_URL = settings.bifrost_url
+CLI_CONFIG_DIR = REPO_ROOT / ".bifrost"
+CLI_CONFIG_PATH = CLI_CONFIG_DIR / "config.json"
+CLI_STATE_PATH = CLI_CONFIG_DIR / "state.json"
+CLI_CONFIG_EXAMPLE_PATH = REPO_ROOT / "bifrost" / "bifrost-cli-config.example.json"
+CLI_STATE_EXAMPLE_PATH = REPO_ROOT / "bifrost" / "bifrost-cli-state.example.json"
+OPENCODE_CONFIG_PATH = REPO_ROOT / ".opencode" / "opencode.json"
 
 
 def fetch_models(base_url: str, provider_filter: str | None = None) -> list[dict]:
@@ -69,13 +95,23 @@ def write_json(path: str, data: dict) -> None:
     print(f"  ✓ Updated {path}")
 
 
+def seed_from_example(target: Path, example: Path) -> dict:
+    if not target.exists() and example.exists():
+        data = json.loads(example.read_text())
+        write_json(str(target), data)
+        return data
+    return read_json(str(target))
+
+
 def update_cli_config(models: list[dict], set_default: str | None = None) -> None:
     model_ids = [m["id"] for m in models if "id" in m]
     providers = sorted(set(m["id"].split("/")[0] for m in models if "/" in m.get("id", "")))
 
-    config = read_json(CLI_CONFIG_PATH)
-    config.setdefault("auto_discovered_models", model_ids)
-    config.setdefault("available_providers", providers)
+    config = seed_from_example(CLI_CONFIG_PATH, CLI_CONFIG_EXAMPLE_PATH)
+    state = seed_from_example(CLI_STATE_PATH, CLI_STATE_EXAMPLE_PATH)
+
+    config["auto_discovered_models"] = model_ids
+    config["available_providers"] = providers
     config["discovered_at"] = os.popen("date -u +%Y-%m-%dT%H:%M:%SZ").read().strip()
 
     if set_default:
@@ -85,14 +121,45 @@ def update_cli_config(models: list[dict], set_default: str | None = None) -> Non
             print(f"  ⚠ Model '{set_default}' not found in discovered models", file=sys.stderr)
             sys.exit(1)
 
-    write_json(CLI_CONFIG_PATH, config)
+    write_json(str(CLI_CONFIG_PATH), config)
 
-    state = read_json(CLI_STATE_PATH)
     for profile_id, sel in state.get("selections", {}).items():
         if set_default:
             sel["model"] = set_default
-    if state:
-        write_json(CLI_STATE_PATH, state)
+    write_json(str(CLI_STATE_PATH), state)
+
+
+def _migrate_model_id(model_id: str, model_ids: list[str]) -> str:
+    """Rebind a model/small_model to a matching ID in the discovered list.
+
+    Handles prefix migrations like meridian-claude/ → anthropic/ by matching
+    the model name part.
+    """
+    if model_id in model_ids:
+        return model_id
+    suffix = model_id.split("/", 1)[-1] if "/" in model_id else model_id
+    for mid in model_ids:
+        if mid.endswith("/" + suffix) or mid == suffix:
+            return mid
+    return model_id
+
+
+def update_opencode_config(model_ids: list[str]) -> None:
+    if not OPENCODE_CONFIG_PATH.exists():
+        return
+
+    opencode = read_json(str(OPENCODE_CONFIG_PATH))
+    provider = opencode.setdefault("provider", {}).setdefault("openai", {})
+    provider.setdefault("name", "Bifrost")
+    provider.setdefault("options", {"baseURL": "http://localhost:8080/openai", "apiKey": "dummy"})
+    provider["models"] = {mid: {} for mid in sorted(model_ids)}
+
+    for key in ("model", "small_model"):
+        old = opencode.get(key)
+        if old:
+            opencode[key] = _migrate_model_id(old, model_ids)
+
+    write_json(str(OPENCODE_CONFIG_PATH), opencode)
 
 
 def print_models(grouped: dict[str, list[dict]]) -> None:
@@ -118,11 +185,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--set-default", "-s", metavar="MODEL_ID",
-        help="Set a default model in CLI config (e.g. github-models/claude-sonnet-4.6)"
+        help="Set a default model in CLI config (e.g. github-copilot/gpt-4o-mini)"
     )
     parser.add_argument(
         "--provider", "-p", metavar="NAME",
-        help="Filter models by provider name (e.g. github, openai)"
+        help="Filter models by provider name (e.g. github-copilot, openai)"
     )
     parser.add_argument(
         "--json", "-j", action="store_true",
@@ -147,8 +214,14 @@ def main() -> None:
     grouped = group_by_provider(models)
     print_models(grouped)
 
+    model_ids = [m["id"] for m in models if "id" in m]
+
     print("  Updating CLI config...")
     update_cli_config(models, args.set_default)
+
+    print("  Updating OpenCode config...")
+    update_opencode_config(model_ids)
+
     print(f"\n  ✅ Done. {len(models)} models from {len(grouped)} providers synced.\n")
 
 
