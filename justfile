@@ -16,6 +16,7 @@ import 'just/headroom.just'
 import 'just/opencode.just'
 import 'just/diagnostics.just'
 import 'just/skills.just'
+import 'just/graphify.just'
 
 # ── Default: Fuzzy Finder Selector ───────────────────
 

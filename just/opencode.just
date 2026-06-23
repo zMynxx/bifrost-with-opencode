@@ -6,10 +6,14 @@ setup:
     echo ""
     echo "✅ Stack is up at http://localhost:8080"
 
-# Install the opencode-with-claude plugin globally
+# Install .opencode npm dependencies (opencode-with-claude plugin, etc.)
+opencode-deps:
+    npm --prefix .opencode install
+    echo "✅ .opencode dependencies installed"
+
+# Install the opencode-with-claude plugin (legacy — now declared in .opencode/package.json)
 claude-plugin-install:
-    npm install -g opencode-with-claude
-    echo "✅ opencode-with-claude plugin installed"
+    just opencode-deps
 
 # Authenticate with Claude Max (one-time OAuth login)
 claude-login:
@@ -27,10 +31,8 @@ opencode:
     echo "→ Headroom proxy at http://localhost:8787 (compresses LLM traffic)"
     echo "→ Bifrost at http://localhost:8080"
     echo "→ Gentle-AI available (run 'just gentle-ai-doctor' to check)"
-    echo "→ Launching OpenCode via bifrost-cli..."
     echo ""
-    #PATH="$HOME/.bifrost/bin:$PATH" bifrost
-    bifrost
+    opencode
 
 # (obsolete — discover-models.py auto-seeds from example templates)
 
@@ -44,8 +46,9 @@ gentle-ai-install:
 
 # Set up gentle-ai for this project (workspace-scoped so config stays local)
 gentle-ai-setup:
-    gentle-ai install --scope=workspace
-    echo "✅ Gentle-AI configured for this project"
+    -gentle-ai install --scope=workspace --agent opencode --sdd-mode multi --channel stable
+    python3 just/gentle-ai-fixup.py
+    echo "✅ Gentle-AI configured for this project (agents merged into .opencode/opencode.json)"
     echo "→ Run 'just gentle-ai-sdd-init' to initialize SDD context"
 
 # Initialize SDD context (detects stack, testing, activates Strict TDD Mode)

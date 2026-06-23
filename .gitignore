@@ -2,6 +2,9 @@
 .env
 .env.local
 
+# Gentle-AI staging area (regenerated on install, synced to .opencode/ by fixup)
+.config/opencode/
+
 # IDE
 .idea/
 .vscode/
@@ -45,6 +48,10 @@ skil-lock
 # Weave runtime
 .weave/runtime/
 
+# Graphify (commit graph files for team sharing, exclude local-only artifacts)
+graphify-out/cost.json
+graphify-out/cache/
+
 # Clickhouse
 clickhouse/data/
 clickhouse/logs/
@@ -52,3 +59,5 @@ clickhouse/logs/
 # Gentle-AI workspace state
 .gentle/
 state.json
+# Local AI runtime state
+.atl/

