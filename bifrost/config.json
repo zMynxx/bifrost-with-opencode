@@ -37,6 +37,28 @@
     }
   },
   "providers": {
+    "meridian-claude": {
+      "keys": [
+        {
+          "name": "meridian-key",
+          "value": "dummy",
+          "models": ["*"],
+          "weight": 1.0
+        }
+      ],
+      "network_config": {
+        "base_url": "http://meridian:3456",
+        "default_request_timeout_in_seconds": 120
+      },
+      "custom_provider_config": {
+        "base_provider_type": "anthropic",
+        "allowed_requests": {
+          "chat_completion": true,
+          "chat_completion_stream": true,
+          "list_models": true
+        }
+      }
+    },
     "github-models": {
       "keys": [
         {
@@ -54,11 +76,13 @@
         "base_provider_type": "openai",
         "request_path_overrides": {
           "chat_completion": "/chat/completions",
-          "chat_completion_stream": "/chat/completions"
+          "chat_completion_stream": "/chat/completions",
+          "list_models": "/models"
         },
         "allowed_requests": {
           "chat_completion": true,
-          "chat_completion_stream": true
+          "chat_completion_stream": true,
+          "list_models": true
         }
       }
     }

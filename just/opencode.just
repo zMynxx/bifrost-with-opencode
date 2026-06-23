@@ -31,7 +31,8 @@ opencode:
     echo "→ Gentle-AI available (run 'just gentle-ai-doctor' to check)"
     echo "→ Launching OpenCode via bifrost-cli..."
     echo ""
-    PATH="$HOME/.bifrost/bin:$PATH" bifrost
+    #PATH="$HOME/.bifrost/bin:$PATH" bifrost
+    bifrost
 
 # Init bifrost-cli user config (~/.bifrost/)
 init-cli:

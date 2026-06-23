@@ -24,6 +24,7 @@ _default:
       grep -v "^#" | \
       grep -v "^\s*$" | \
       sed 's/:.*//' | \
+      sed 's/\s*#.*//' | \
       fzf --prompt="⚡ just " --height=40% --reverse --border --info=inline | \
       xargs -I {} just {}
 
