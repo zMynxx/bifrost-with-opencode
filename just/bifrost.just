@@ -47,20 +47,21 @@ meridian-up:
 meridian-stop:
     docker-compose stop meridian
 
-# One-time auth: generate a token from your host Claude session and add it
-#   Run this ONCE after 'just meridian-up'
-#   (Requires 'claude' authenticated on the host machine)
+# Auth check: verify the host Claude session is mounted and valid
+#   Run this after 'just meridian-up'
+#   Credentials are mounted from the host's ~/.claude directory
+#   Requires 'claude login' on the host machine (one-time)
 meridian-auth:
     #!/usr/bin/env bash
-    set -e
-    TOKEN=$(claude setup-token 2>/dev/null) || {
-      echo "❌ 'claude setup-token' failed. Is Claude installed and logged in?"
-      echo "   Run: npm install -g @anthropic-ai/claude-code && claude login"
-      exit 1
-    }
-    docker exec -i meridian meridian profile add --oauth-token "$TOKEN"
-    echo "✅ Meridian authenticated with Claude Max"
-    echo "   Restart to pick up the profile: docker-compose restart meridian"
+    echo "Checking Claude auth on host..."
+    if command -v claude &>/dev/null; then
+      claude auth status 2>/dev/null && echo "✅ Host Claude session OK" || echo "⚠ Run 'claude login' first"
+    else
+      echo "⚠ Claude CLI not found on host (credentials directory will be mounted as-is)"
+    fi
+    echo ""
+    echo "Meridian container mounts: ~/.claude → /home/claude/.claude"
+    echo "Start Meridian and verify: just meridian-status"
 
 # Check Meridian status
 meridian-status:
