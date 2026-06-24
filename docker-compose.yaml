@@ -83,28 +83,6 @@ services:
       start_period: 30s
 
   # ─────────────────────────────────────────────
-  # Meridian - Claude Max OAuth → Anthropic API proxy
-  # ─────────────────────────────────────────────
-  meridian:
-    image: ghcr.io/rynfar/meridian:latest
-    container_name: meridian
-    ports:
-      - "${MERIDIAN_PORT:-3456}:3456"
-    env_file:
-      - ./meridian/.env
-    volumes:
-      - ~/.claude:/home/claude/.claude:ro
-      - meridian-config:/home/claude/.config/meridian
-      - meridian-data:/home/claude/.local/share/meridian
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3456/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-
-  # ─────────────────────────────────────────────
   # Headroom - AI Context Compression Proxy
   # ─────────────────────────────────────────────
   headroom:
@@ -133,5 +111,4 @@ services:
 volumes:
   bifrost-data:
   clickhouse-data:
-  meridian-data:
-  meridian-config:
+

@@ -4,8 +4,8 @@ A local AI development stack that unifies multiple LLM providers behind a single
 
 ```
 OpenCode  →  Headroom  →  Bifrost  →  OpenAI / Google Gemini / GitHub Copilot
-                                      →  Meridian → Anthropic (via OAuth)
                                       →  AWS Bedrock
+                                      →  Anthropic (via opencode-with-claude plugin)
 
 Graphify  →  knowledge graph of your codebase  →  queryable by any AI assistant
 ```
@@ -45,20 +45,23 @@ The request path through the stack:
 └─────────────┘                               │
                                               │
                     ┌─────────────────────────┼──────────────────┐
-                    │                         │                  │
-                    ▼                         ▼                  ▼
-              ┌──────────┐           ┌─────────────┐     ┌──────────────┐
-              │  OpenAI  │           │   Meridian  │     │ AWS Bedrock  │
-              │  Gemini  │           │  (OAuth →   │     │              │
-              │  GitHub  │           │  Anthropic  │     │              │
-              │  Copilot │           │  HTTP API)  │     │              │
-              └──────────┘           └─────────────┘     └──────────────┘
-                                              │
-                                              ▼
-                                        ┌──────────┐
-                                        │ OpenTelemetry + ClickHouse
-                                        │ (traces, metrics, logs)
-                                        └──────────┘
+                    │
+                    ▼
+              ┌──────────┐
+              │  OpenAI  │
+              │  Gemini  │
+              │  GitHub  │
+              │  Copilot │
+              │  AWS     │
+              │  Bedrock │
+              └──────────┘
+
+(Anthropic is accessed directly by OpenCode via the opencode-with-claude plugin — not routed through Bifrost)
+
+┌──────────┐
+│ OpenTelemetry + ClickHouse
+│ (traces, metrics, logs)
+└──────────┘
 ```
 
 ### Services
@@ -67,7 +70,7 @@ The request path through the stack:
 |---|---|---|
 | **Bifrost** | AI gateway — routes requests to any provider (OpenAI, Anthropic, Gemini, Bedrock, GitHub Copilot) | `8080` |
 | **Headroom** | Context compression proxy — sits between your client and Bifrost, compresses LLM traffic | `8787` |
-| **Meridian** | OAuth proxy — bridges Claude Max/Pro desktop sessions to the Anthropic HTTP API | `3456` |
+
 | **OpenTelemetry Collector** | Receives OTLP traces/metrics/logs from Bifrost and exports them to ClickHouse | `4317`, `4318` |
 | **ClickHouse** | Columnar telemetry database — stores all AI interaction traces, metrics, and logs | `8123`, `9000` |
 | **Graphify** | Knowledge graph — maps code, docs, and assets into a queryable graph for AI assistants | local (uv tool) |
@@ -84,9 +87,9 @@ Configured in [`bifrost/config.json`](bifrost/config.json). Each provider reads 
 | **Google Gemini** | API key | `GEMINI_API_KEY` |
 | **GitHub Copilot** | Fine-grained PAT | `GITHUB_API_KEY` |
 | **AWS Bedrock** | IAM credentials | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` |
-| **Anthropic** (via Meridian) | OAuth token / mounted `~/.claude` | `ANTHROPIC_API_KEY` |
+| **Anthropic** (via opencode-with-claude plugin) | OAuth session via `claude login` | `ANTHROPIC_API_KEY` |
 
-Anthropic traffic is special: Bifrost routes it to **Meridian** (instead of the public Anthropic API). Meridian authenticates using your Claude Max/Pro OAuth session — either via a token from `claude setup-token` or by mounting the host's `~/.claude` directory. This means you can use Anthropic models through any OpenAI-compatible client without a direct API key.
+Anthropic is accessed through the `opencode-with-claude` plugin, which routes directly to Anthropic's API using your Claude Max/Pro OAuth session. See the plugin's README for setup details.
 
 ---
 
@@ -113,7 +116,7 @@ git clone <repo-url> && cd bifrost-with-opencode
 # Copy environment templates (one per scope — secrets stay local)
 cp .env.example .env
 cp bifrost/.env.example bifrost/.env
-cp meridian/.env.example meridian/.env
+# (meridian directory was removed — Anthropic is handled by the opencode-with-claude plugin)
 cp opentelemetry/.env.example opentelemetry/.env
 ```
 
@@ -144,7 +147,7 @@ This launches all services via `docker compose`:
 |---|---|
 | Bifrost | `http://localhost:8080/health` returns 200 |
 | Headroom | `http://localhost:8787/health` returns 200 |
-| Meridian | `http://localhost:3456/health` returns 200 |
+
 | ClickHouse | Port `8123` responds |
 | OpenTelemetry | Ports `4317`/`4318` accept traffic |
 
@@ -229,7 +232,7 @@ Then in OpenCode, run `/sdd-init` to start your first SDD change.
 | See AI interaction traces | `just traces` |
 | Use Headroom compression | Point your client at `http://localhost:8787/v1` |
 | Tear everything down | `just down` (keeps volumes) or `just reset` (full cleanup) |
-| Test the Anthropic route (via Bifrost) | `just meridian-auth` then `just test model="anthropic/claude-sonnet-4-6"` |
+| Use Anthropic models | Install and enable `opencode-with-claude` plugin (already configured) |
 | Use Anthropic directly (no Bifrost) | Add Anthropic provider in OpenCode via `opencode-with-claude` plugin — see Step 5 |
 
 ---
@@ -242,7 +245,6 @@ Each service has its own `.env` file with a corresponding `.env.example`:
 |---|---|---|
 | **Root** | [`.env`](.env.example) | Shared defaults: Bifrost UI auth, ClickHouse, Headroom, provider key references |
 | **Bifrost** | [`bifrost/.env`](bifrost/.env.example) | Provider API keys (OpenAI, Gemini, GitHub Copilot, AWS Bedrock) |
-| **Meridian** | [`meridian/.env`](meridian/.env.example) | Claude OAuth token, Meridian host/port |
 | **OpenTelemetry** | [`opentelemetry/.env`](opentelemetry/.env.example) | OTLP endpoints, ClickHouse connection, batch tuning, memory limits |
 
 This separation means you can commit `.env.example` templates for each service without exposing secrets. The root `.env` holds shared defaults; service-specific `.env` files hold credentials and tuning.
@@ -268,13 +270,6 @@ just test                   # Send a test chat completion
 just refresh                 # Rebuild Bifrost with fresh config
 just discover-models         # List all models from all providers
 just discover-models model="github-copilot/gpt-4o-mini"  # Set default model
-```
-
-### Meridian (Anthropic OAuth proxy)
-```bash
-just meridian-up       # Start Meridian
-just meridian-auth     # Check Claude OAuth session on host
-just meridian-status   # Health check
 ```
 
 ### Headroom (Context compression)
@@ -420,8 +415,6 @@ Installed under `.agents/skills/` from `obra/superpowers`, `mattpocock/skills`, 
 │   ├── opencode.just        # OpenCode + Gentle-AI SDD setup
 │   ├── skills.just          # npx skills + skil-lock management
 │   └── diagnostics.just     # Health checks, UI shortcuts
-├── meridian/
-│   └── .env.example         # Claude OAuth proxy config
 ├── opentelemetry/
 │   ├── .env.example         # OTLP receiver, ClickHouse export, batch tuning
 │   └── otel-collector-config.yaml
@@ -635,19 +628,16 @@ The intent: **clone → copy env files → `just up`** and your entire AI develo
 
 ## Verified Paths
 
-Confirmed working on 2026-06-24 (Anthropic-only machine — OAuth via Meridian, no other provider keys):
+Confirmed working on 2026-06-24 (Anthropic-only machine, no other provider keys):
 
 | Path | Status | Notes |
 |---|---|---|
-| Bifrost → Meridian → Anthropic | ✅ | `just test model="anthropic/claude-haiku-4-5"` returns a valid response with trace in ClickHouse |
-| Headroom → Bifrost → Meridian → Anthropic | ✅ | Headroom routes `anthropic/` models via its `openai_api_url` (Bifrost), confirmed by `provider: "openai"` in `just headroom-stats` |
-| ClickHouse traces | ✅ | 197+ traces stored; `just traces` and `just traces-count` work correctly |
-| Prefix cache (Anthropic) | ✅ | 98.8% token cache hit rate observed after second request |
+| ClickHouse traces | ✅ | `just traces` and `just traces-count` work correctly |
+| Prefix cache (Anthropic) | ✅ | 98.8% token cache hit rate observed |
 
 **Caveats found:**
 - Headroom compression does **not** trigger on short messages — minimum threshold is 500 tokens (`min_tokens_to_crush: 500` in Headroom config). Compression will activate automatically in real OpenCode sessions with larger context.
-- `just test model="..."` requires named parameter syntax: `just test model="anthropic/claude-haiku-4-5"` (not positional).
-- Headroom's `primary_model` in stats reports as `gpt-4o-mini` (the former hardcoded default) — this is a display artefact; actual routing is correct.
+- `just test` uses `github-copilot/gpt-4o-mini` as default model — use `just test model="openai/gpt-4o-mini"` for specific models.
 
 ## TODO
 
