@@ -577,6 +577,26 @@ just graphify-ui
 just graphify-hook
 ```
 
+### Current Graph (pre-built)
+
+This repo ships with a pre-built graph. Current stats:
+
+| Metric | Value |
+|---|---|
+| Nodes | 500 |
+| Edges | 536 |
+| Communities | 95 |
+| Key god nodes | `agent`, `task`, `bash`, `read`, `edit` |
+
+Notable communities detected: **Core Infrastructure Services** (Bifrost, Headroom, Meridian, OTel, ClickHouse), **SDD Pipeline Skills** (explore → propose → spec → design → tasks → apply → verify → archive), **OpenCode Config & Permissions**, **Multi-Platform AI Tool References**, **Engram Memory Service**, **Systematic Debugging Skills**.
+
+Open `graphify-out/graph.html` in any browser for the interactive visualization, or query directly:
+
+```bash
+just graphify-query query="what connects Bifrost to the OpenTelemetry collector?"
+just graphify-query query="how does the SDD pipeline flow from spec to apply?"
+```
+
 ### Team Workflow
 
 `graphify-out/` is committed to the repo so every team member starts with a map. Only local artifacts are excluded:
@@ -610,6 +630,30 @@ No global installations required beyond foundational tooling (Docker, just, Node
 | graphify skill + graph | `graphify-out/`, `.agents/skills/graphify/` | No |
 
 The intent: **clone → copy env files → `just up`** and your entire AI development environment is ready. The only globally installed packages are the launchers themselves; all configuration, skills, prompts, and policies are repo-local and version-controlled.
+
+---
+
+## Verified Paths
+
+Confirmed working on 2026-06-24 (Anthropic-only machine — OAuth via Meridian, no other provider keys):
+
+| Path | Status | Notes |
+|---|---|---|
+| Bifrost → Meridian → Anthropic | ✅ | `just test model="anthropic/claude-haiku-4-5"` returns a valid response with trace in ClickHouse |
+| Headroom → Bifrost → Meridian → Anthropic | ✅ | Headroom routes `anthropic/` models via its `openai_api_url` (Bifrost), confirmed by `provider: "openai"` in `just headroom-stats` |
+| ClickHouse traces | ✅ | 197+ traces stored; `just traces` and `just traces-count` work correctly |
+| Prefix cache (Anthropic) | ✅ | 98.8% token cache hit rate observed after second request |
+
+**Caveats found:**
+- Headroom compression does **not** trigger on short messages — minimum threshold is 500 tokens (`min_tokens_to_crush: 500` in Headroom config). Compression will activate automatically in real OpenCode sessions with larger context.
+- `just test model="..."` requires named parameter syntax: `just test model="anthropic/claude-haiku-4-5"` (not positional).
+- Headroom's `primary_model` in stats reports as `gpt-4o-mini` (the former hardcoded default) — this is a display artefact; actual routing is correct.
+
+## TODO
+
+- [ ] **Verify Headroom compaction (direct Anthropic, no Bifrost)** — confirm compression works when OpenCode talks to Anthropic directly via the `opencode-with-claude` plugin (bypassing Bifrost entirely). Requires a live OpenCode session with the plugin configured to proxy through `http://localhost:8787`. Check compression stats with `just headroom-stats` after a multi-turn conversation.
+- [ ] **Full end-to-end smoke test** — fresh clone on a clean machine: follow the README from `git clone` through `just up` → `just check` → `just opencode` and confirm everything works with no undocumented steps.
+- [ ] **Verify non-Anthropic providers** — OpenAI, Gemini, GitHub Copilot, and Bedrock paths are untested on this machine (no valid keys). Verify on a machine with full provider access using `just test model="openai/gpt-4o-mini"` etc.
 
 ---
 

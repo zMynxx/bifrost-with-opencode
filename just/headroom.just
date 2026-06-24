@@ -18,10 +18,10 @@ headroom-mcp-install:
     headroom mcp install
 
 # Test chat through Headroom proxy (compresses then routes through Bifrost)
-headroom-test msg="Say hello in one word":
+headroom-test msg="Say hello in one word" model="anthropic/claude-haiku-4-5":
     curl -s -X POST http://localhost:8787/v1/chat/completions \
       -H "Content-Type: application/json" \
-      -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"{{msg}}"}]}' \
+      -d '{"model":"{{model}}","messages":[{"role":"user","content":"{{msg}}"}]}' \
       | python3 -m json.tool
 
 # Tail Headroom logs
