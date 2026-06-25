@@ -20,8 +20,9 @@
       }
     },
     "anthropic": {
-      "name": "Antropic",
+      "name": "Antropic (via Headroom)",
       "options": {
+        "baseURL": "http://localhost:8788",
         "apiKey": "placeholder"
       },
       "models": {
