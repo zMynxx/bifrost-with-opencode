@@ -144,6 +144,23 @@ def _migrate_model_id(model_id: str, model_ids: list[str]) -> str:
     return model_id
 
 
+PROVIDER_LABELS: dict[str, str] = {
+    "openai": "OpenAI",
+    "github-copilot": "Copilot",
+    "bedrock": "Bedrock",
+    "anthropic": "Anthropic",
+    "gemini": "Gemini",
+}
+
+
+def _auto_name(model_id: str) -> str:
+    if "/" not in model_id:
+        return model_id
+    provider, name = model_id.split("/", 1)
+    label = PROVIDER_LABELS.get(provider, provider)
+    return f"{name} [{label}]"
+
+
 def update_opencode_config(model_ids: list[str]) -> None:
     if not OPENCODE_CONFIG_PATH.exists():
         return
@@ -152,7 +169,12 @@ def update_opencode_config(model_ids: list[str]) -> None:
     provider = opencode.setdefault("provider", {}).setdefault("openai", {})
     provider.setdefault("name", "Bifrost")
     provider.setdefault("options", {"baseURL": "http://localhost:8080/openai", "apiKey": "dummy"})
-    provider["models"] = {mid: {} for mid in sorted(model_ids)}
+
+    existing = provider.get("models", {})
+    provider["models"] = {
+        mid: existing[mid] if mid in existing else {"name": _auto_name(mid)}
+        for mid in sorted(model_ids)
+    }
 
     for key in ("model", "small_model"):
         old = opencode.get(key)

@@ -12,18 +12,798 @@
         "apiKey": "dummy"
       },
       "models": {
-        "openai/gpt-4o":                                          { "name": "GPT-4o [OpenAI]" },
-        "openai/gpt-4o-mini":                                     { "name": "GPT-4o Mini [OpenAI]" },
-        "openai/gpt-4.1":                                         { "name": "GPT-4.1 [OpenAI]" },
-        "github-copilot/gpt-4o":                                  { "name": "GPT-4o [Copilot]" },
-        "github-copilot/gpt-4o-mini":                             { "name": "GPT-4o Mini [Copilot]" },
-        "github-copilot/gpt-4.1":                                 { "name": "GPT-4.1 [Copilot]" },
-        "github-copilot/gpt-5.4":                                 { "name": "GPT-5.4 [Copilot]" },
-        "bedrock/claude-sonnet-4":                                { "name": "Claude Sonnet 4 [Bedrock]" },
-        "bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0":     { "name": "Claude Sonnet 4 Full [Bedrock]" },
-        "bedrock/anthropic.claude-haiku-4-5-20251001-v1:0":       { "name": "Claude Haiku 4.5 [Bedrock]" },
-        "bedrock/amazon.nova-pro-v1:0":                           { "name": "Nova Pro [Bedrock]" },
-        "bedrock/amazon.nova-lite-v1:0":                          { "name": "Nova Lite [Bedrock]" }
+        "bedrock/ai21.jamba-1-5-large-v1:0": {
+          "name": "ai21.jamba-1-5-large-v1:0 [Bedrock]"
+        },
+        "bedrock/ai21.jamba-1-5-mini-v1:0": {
+          "name": "ai21.jamba-1-5-mini-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.nova-2-lite-v1:0": {
+          "name": "amazon.nova-2-lite-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.nova-2-lite-v1:0:256k": {
+          "name": "amazon.nova-2-lite-v1:0:256k [Bedrock]"
+        },
+        "bedrock/amazon.nova-2-multimodal-embeddings-v1:0": {
+          "name": "amazon.nova-2-multimodal-embeddings-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.nova-2-sonic-v1:0": {
+          "name": "amazon.nova-2-sonic-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.nova-canvas-v1:0": {
+          "name": "amazon.nova-canvas-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.nova-lite-v1:0": {
+          "name": "Nova Lite [Bedrock]"
+        },
+        "bedrock/amazon.nova-lite-v1:0:24k": {
+          "name": "amazon.nova-lite-v1:0:24k [Bedrock]"
+        },
+        "bedrock/amazon.nova-lite-v1:0:300k": {
+          "name": "amazon.nova-lite-v1:0:300k [Bedrock]"
+        },
+        "bedrock/amazon.nova-micro-v1:0": {
+          "name": "amazon.nova-micro-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.nova-micro-v1:0:128k": {
+          "name": "amazon.nova-micro-v1:0:128k [Bedrock]"
+        },
+        "bedrock/amazon.nova-micro-v1:0:24k": {
+          "name": "amazon.nova-micro-v1:0:24k [Bedrock]"
+        },
+        "bedrock/amazon.nova-premier-v1:0": {
+          "name": "amazon.nova-premier-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.nova-premier-v1:0:1000k": {
+          "name": "amazon.nova-premier-v1:0:1000k [Bedrock]"
+        },
+        "bedrock/amazon.nova-premier-v1:0:20k": {
+          "name": "amazon.nova-premier-v1:0:20k [Bedrock]"
+        },
+        "bedrock/amazon.nova-premier-v1:0:8k": {
+          "name": "amazon.nova-premier-v1:0:8k [Bedrock]"
+        },
+        "bedrock/amazon.nova-premier-v1:0:mm": {
+          "name": "amazon.nova-premier-v1:0:mm [Bedrock]"
+        },
+        "bedrock/amazon.nova-pro-v1:0": {
+          "name": "Nova Pro [Bedrock]"
+        },
+        "bedrock/amazon.nova-pro-v1:0:24k": {
+          "name": "amazon.nova-pro-v1:0:24k [Bedrock]"
+        },
+        "bedrock/amazon.nova-pro-v1:0:300k": {
+          "name": "amazon.nova-pro-v1:0:300k [Bedrock]"
+        },
+        "bedrock/amazon.nova-reel-v1:0": {
+          "name": "amazon.nova-reel-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.nova-reel-v1:1": {
+          "name": "amazon.nova-reel-v1:1 [Bedrock]"
+        },
+        "bedrock/amazon.nova-sonic-v1:0": {
+          "name": "amazon.nova-sonic-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.titan-embed-g1-text-02": {
+          "name": "amazon.titan-embed-g1-text-02 [Bedrock]"
+        },
+        "bedrock/amazon.titan-embed-image-v1": {
+          "name": "amazon.titan-embed-image-v1 [Bedrock]"
+        },
+        "bedrock/amazon.titan-embed-image-v1:0": {
+          "name": "amazon.titan-embed-image-v1:0 [Bedrock]"
+        },
+        "bedrock/amazon.titan-embed-text-v1": {
+          "name": "amazon.titan-embed-text-v1 [Bedrock]"
+        },
+        "bedrock/amazon.titan-embed-text-v1:2:8k": {
+          "name": "amazon.titan-embed-text-v1:2:8k [Bedrock]"
+        },
+        "bedrock/amazon.titan-embed-text-v2:0": {
+          "name": "amazon.titan-embed-text-v2:0 [Bedrock]"
+        },
+        "bedrock/amazon.titan-embed-text-v2:0:8k": {
+          "name": "amazon.titan-embed-text-v2:0:8k [Bedrock]"
+        },
+        "bedrock/amazon.titan-image-generator-v2:0": {
+          "name": "amazon.titan-image-generator-v2:0 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-3-haiku-20240307-v1:0": {
+          "name": "anthropic.claude-3-haiku-20240307-v1:0 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-3-haiku-20240307-v1:0:200k": {
+          "name": "anthropic.claude-3-haiku-20240307-v1:0:200k [Bedrock]"
+        },
+        "bedrock/anthropic.claude-3-haiku-20240307-v1:0:48k": {
+          "name": "anthropic.claude-3-haiku-20240307-v1:0:48k [Bedrock]"
+        },
+        "bedrock/anthropic.claude-3-sonnet-20240229-v1:0": {
+          "name": "anthropic.claude-3-sonnet-20240229-v1:0 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-3-sonnet-20240229-v1:0:200k": {
+          "name": "anthropic.claude-3-sonnet-20240229-v1:0:200k [Bedrock]"
+        },
+        "bedrock/anthropic.claude-3-sonnet-20240229-v1:0:28k": {
+          "name": "anthropic.claude-3-sonnet-20240229-v1:0:28k [Bedrock]"
+        },
+        "bedrock/anthropic.claude-fable-5": {
+          "name": "anthropic.claude-fable-5 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-haiku-4-5-20251001-v1:0": {
+          "name": "Claude Haiku 4.5 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-opus-4-1-20250805-v1:0": {
+          "name": "anthropic.claude-opus-4-1-20250805-v1:0 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-opus-4-5-20251101-v1:0": {
+          "name": "anthropic.claude-opus-4-5-20251101-v1:0 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-opus-4-6-v1": {
+          "name": "anthropic.claude-opus-4-6-v1 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-opus-4-7": {
+          "name": "anthropic.claude-opus-4-7 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-opus-4-8": {
+          "name": "anthropic.claude-opus-4-8 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-sonnet-4-20250514-v1:0": {
+          "name": "anthropic.claude-sonnet-4-20250514-v1:0 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-sonnet-4-5-20250929-v1:0": {
+          "name": "anthropic.claude-sonnet-4-5-20250929-v1:0 [Bedrock]"
+        },
+        "bedrock/anthropic.claude-sonnet-4-6": {
+          "name": "anthropic.claude-sonnet-4-6 [Bedrock]"
+        },
+        "bedrock/claude-sonnet-4": {
+          "name": "Claude Sonnet 4 [Bedrock]"
+        },
+        "bedrock/cohere.command-r-plus-v1:0": {
+          "name": "cohere.command-r-plus-v1:0 [Bedrock]"
+        },
+        "bedrock/cohere.command-r-v1:0": {
+          "name": "cohere.command-r-v1:0 [Bedrock]"
+        },
+        "bedrock/cohere.embed-english-v3": {
+          "name": "cohere.embed-english-v3 [Bedrock]"
+        },
+        "bedrock/cohere.embed-english-v3:0:512": {
+          "name": "cohere.embed-english-v3:0:512 [Bedrock]"
+        },
+        "bedrock/cohere.embed-multilingual-v3": {
+          "name": "cohere.embed-multilingual-v3 [Bedrock]"
+        },
+        "bedrock/cohere.embed-multilingual-v3:0:512": {
+          "name": "cohere.embed-multilingual-v3:0:512 [Bedrock]"
+        },
+        "bedrock/cohere.embed-v4:0": {
+          "name": "cohere.embed-v4:0 [Bedrock]"
+        },
+        "bedrock/cohere.rerank-v3-5:0": {
+          "name": "cohere.rerank-v3-5:0 [Bedrock]"
+        },
+        "bedrock/deepseek.r1-v1:0": {
+          "name": "deepseek.r1-v1:0 [Bedrock]"
+        },
+        "bedrock/deepseek.v3.2": {
+          "name": "deepseek.v3.2 [Bedrock]"
+        },
+        "bedrock/google.gemma-3-12b-it": {
+          "name": "google.gemma-3-12b-it [Bedrock]"
+        },
+        "bedrock/google.gemma-3-27b-it": {
+          "name": "google.gemma-3-27b-it [Bedrock]"
+        },
+        "bedrock/google.gemma-3-4b-it": {
+          "name": "google.gemma-3-4b-it [Bedrock]"
+        },
+        "bedrock/meta.llama3-1-70b-instruct-v1:0": {
+          "name": "meta.llama3-1-70b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama3-1-8b-instruct-v1:0": {
+          "name": "meta.llama3-1-8b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama3-2-11b-instruct-v1:0": {
+          "name": "meta.llama3-2-11b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama3-2-1b-instruct-v1:0": {
+          "name": "meta.llama3-2-1b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama3-2-3b-instruct-v1:0": {
+          "name": "meta.llama3-2-3b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama3-2-90b-instruct-v1:0": {
+          "name": "meta.llama3-2-90b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama3-3-70b-instruct-v1:0": {
+          "name": "meta.llama3-3-70b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama3-70b-instruct-v1:0": {
+          "name": "meta.llama3-70b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama3-8b-instruct-v1:0": {
+          "name": "meta.llama3-8b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama4-maverick-17b-instruct-v1:0": {
+          "name": "meta.llama4-maverick-17b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/meta.llama4-scout-17b-instruct-v1:0": {
+          "name": "meta.llama4-scout-17b-instruct-v1:0 [Bedrock]"
+        },
+        "bedrock/minimax.minimax-m2": {
+          "name": "minimax.minimax-m2 [Bedrock]"
+        },
+        "bedrock/minimax.minimax-m2.1": {
+          "name": "minimax.minimax-m2.1 [Bedrock]"
+        },
+        "bedrock/minimax.minimax-m2.5": {
+          "name": "minimax.minimax-m2.5 [Bedrock]"
+        },
+        "bedrock/mistral.devstral-2-123b": {
+          "name": "mistral.devstral-2-123b [Bedrock]"
+        },
+        "bedrock/mistral.magistral-small-2509": {
+          "name": "mistral.magistral-small-2509 [Bedrock]"
+        },
+        "bedrock/mistral.ministral-3-14b-instruct": {
+          "name": "mistral.ministral-3-14b-instruct [Bedrock]"
+        },
+        "bedrock/mistral.ministral-3-3b-instruct": {
+          "name": "mistral.ministral-3-3b-instruct [Bedrock]"
+        },
+        "bedrock/mistral.ministral-3-8b-instruct": {
+          "name": "mistral.ministral-3-8b-instruct [Bedrock]"
+        },
+        "bedrock/mistral.mistral-7b-instruct-v0:2": {
+          "name": "mistral.mistral-7b-instruct-v0:2 [Bedrock]"
+        },
+        "bedrock/mistral.mistral-large-2402-v1:0": {
+          "name": "mistral.mistral-large-2402-v1:0 [Bedrock]"
+        },
+        "bedrock/mistral.mistral-large-3-675b-instruct": {
+          "name": "mistral.mistral-large-3-675b-instruct [Bedrock]"
+        },
+        "bedrock/mistral.mistral-small-2402-v1:0": {
+          "name": "mistral.mistral-small-2402-v1:0 [Bedrock]"
+        },
+        "bedrock/mistral.mixtral-8x7b-instruct-v0:1": {
+          "name": "mistral.mixtral-8x7b-instruct-v0:1 [Bedrock]"
+        },
+        "bedrock/mistral.pixtral-large-2502-v1:0": {
+          "name": "mistral.pixtral-large-2502-v1:0 [Bedrock]"
+        },
+        "bedrock/mistral.voxtral-mini-3b-2507": {
+          "name": "mistral.voxtral-mini-3b-2507 [Bedrock]"
+        },
+        "bedrock/mistral.voxtral-small-24b-2507": {
+          "name": "mistral.voxtral-small-24b-2507 [Bedrock]"
+        },
+        "bedrock/moonshot.kimi-k2-thinking": {
+          "name": "moonshot.kimi-k2-thinking [Bedrock]"
+        },
+        "bedrock/moonshotai.kimi-k2.5": {
+          "name": "moonshotai.kimi-k2.5 [Bedrock]"
+        },
+        "bedrock/nvidia.nemotron-nano-12b-v2": {
+          "name": "nvidia.nemotron-nano-12b-v2 [Bedrock]"
+        },
+        "bedrock/nvidia.nemotron-nano-3-30b": {
+          "name": "nvidia.nemotron-nano-3-30b [Bedrock]"
+        },
+        "bedrock/nvidia.nemotron-nano-9b-v2": {
+          "name": "nvidia.nemotron-nano-9b-v2 [Bedrock]"
+        },
+        "bedrock/nvidia.nemotron-super-3-120b": {
+          "name": "nvidia.nemotron-super-3-120b [Bedrock]"
+        },
+        "bedrock/openai.gpt-oss-120b-1:0": {
+          "name": "openai.gpt-oss-120b-1:0 [Bedrock]"
+        },
+        "bedrock/openai.gpt-oss-20b-1:0": {
+          "name": "openai.gpt-oss-20b-1:0 [Bedrock]"
+        },
+        "bedrock/openai.gpt-oss-safeguard-120b": {
+          "name": "openai.gpt-oss-safeguard-120b [Bedrock]"
+        },
+        "bedrock/openai.gpt-oss-safeguard-20b": {
+          "name": "openai.gpt-oss-safeguard-20b [Bedrock]"
+        },
+        "bedrock/qwen.qwen3-32b-v1:0": {
+          "name": "qwen.qwen3-32b-v1:0 [Bedrock]"
+        },
+        "bedrock/qwen.qwen3-coder-30b-a3b-v1:0": {
+          "name": "qwen.qwen3-coder-30b-a3b-v1:0 [Bedrock]"
+        },
+        "bedrock/qwen.qwen3-coder-next": {
+          "name": "qwen.qwen3-coder-next [Bedrock]"
+        },
+        "bedrock/qwen.qwen3-next-80b-a3b": {
+          "name": "qwen.qwen3-next-80b-a3b [Bedrock]"
+        },
+        "bedrock/qwen.qwen3-vl-235b-a22b": {
+          "name": "qwen.qwen3-vl-235b-a22b [Bedrock]"
+        },
+        "bedrock/stability.stable-conservative-upscale-v1:0": {
+          "name": "stability.stable-conservative-upscale-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-creative-upscale-v1:0": {
+          "name": "stability.stable-creative-upscale-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-fast-upscale-v1:0": {
+          "name": "stability.stable-fast-upscale-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-image-control-sketch-v1:0": {
+          "name": "stability.stable-image-control-sketch-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-image-control-structure-v1:0": {
+          "name": "stability.stable-image-control-structure-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-image-erase-object-v1:0": {
+          "name": "stability.stable-image-erase-object-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-image-inpaint-v1:0": {
+          "name": "stability.stable-image-inpaint-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-image-remove-background-v1:0": {
+          "name": "stability.stable-image-remove-background-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-image-search-recolor-v1:0": {
+          "name": "stability.stable-image-search-recolor-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-image-search-replace-v1:0": {
+          "name": "stability.stable-image-search-replace-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-image-style-guide-v1:0": {
+          "name": "stability.stable-image-style-guide-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-outpaint-v1:0": {
+          "name": "stability.stable-outpaint-v1:0 [Bedrock]"
+        },
+        "bedrock/stability.stable-style-transfer-v1:0": {
+          "name": "stability.stable-style-transfer-v1:0 [Bedrock]"
+        },
+        "bedrock/twelvelabs.marengo-embed-2-7-v1:0": {
+          "name": "twelvelabs.marengo-embed-2-7-v1:0 [Bedrock]"
+        },
+        "bedrock/twelvelabs.marengo-embed-3-0-v1:0": {
+          "name": "twelvelabs.marengo-embed-3-0-v1:0 [Bedrock]"
+        },
+        "bedrock/twelvelabs.pegasus-1-2-v1:0": {
+          "name": "twelvelabs.pegasus-1-2-v1:0 [Bedrock]"
+        },
+        "bedrock/writer.palmyra-vision-7b": {
+          "name": "writer.palmyra-vision-7b [Bedrock]"
+        },
+        "bedrock/writer.palmyra-x4-v1:0": {
+          "name": "writer.palmyra-x4-v1:0 [Bedrock]"
+        },
+        "bedrock/writer.palmyra-x5-v1:0": {
+          "name": "writer.palmyra-x5-v1:0 [Bedrock]"
+        },
+        "bedrock/zai.glm-4.7": {
+          "name": "zai.glm-4.7 [Bedrock]"
+        },
+        "bedrock/zai.glm-4.7-flash": {
+          "name": "zai.glm-4.7-flash [Bedrock]"
+        },
+        "bedrock/zai.glm-5": {
+          "name": "zai.glm-5 [Bedrock]"
+        },
+        "github-copilot/claude-haiku-4.5": {
+          "name": "claude-haiku-4.5 [Copilot]"
+        },
+        "github-copilot/claude-sonnet-4.5": {
+          "name": "claude-sonnet-4.5 [Copilot]"
+        },
+        "github-copilot/claude-sonnet-4.6": {
+          "name": "claude-sonnet-4.6 [Copilot]"
+        },
+        "github-copilot/gemini-2.5-pro": {
+          "name": "gemini-2.5-pro [Copilot]"
+        },
+        "github-copilot/gemini-3.1-pro-preview": {
+          "name": "gemini-3.1-pro-preview [Copilot]"
+        },
+        "github-copilot/gemini-3.5-flash": {
+          "name": "gemini-3.5-flash [Copilot]"
+        },
+        "github-copilot/gpt-3.5-turbo": {
+          "name": "gpt-3.5-turbo [Copilot]"
+        },
+        "github-copilot/gpt-3.5-turbo-0613": {
+          "name": "gpt-3.5-turbo-0613 [Copilot]"
+        },
+        "github-copilot/gpt-4": {
+          "name": "gpt-4 [Copilot]"
+        },
+        "github-copilot/gpt-4-0613": {
+          "name": "gpt-4-0613 [Copilot]"
+        },
+        "github-copilot/gpt-4-o-preview": {
+          "name": "gpt-4-o-preview [Copilot]"
+        },
+        "github-copilot/gpt-4.1": {
+          "name": "GPT-4.1 [Copilot]"
+        },
+        "github-copilot/gpt-4.1-2025-04-14": {
+          "name": "gpt-4.1-2025-04-14 [Copilot]"
+        },
+        "github-copilot/gpt-4o": {
+          "name": "GPT-4o [Copilot]"
+        },
+        "github-copilot/gpt-4o-2024-05-13": {
+          "name": "gpt-4o-2024-05-13 [Copilot]"
+        },
+        "github-copilot/gpt-4o-2024-08-06": {
+          "name": "gpt-4o-2024-08-06 [Copilot]"
+        },
+        "github-copilot/gpt-4o-2024-11-20": {
+          "name": "gpt-4o-2024-11-20 [Copilot]"
+        },
+        "github-copilot/gpt-4o-mini": {
+          "name": "GPT-4o Mini [Copilot]"
+        },
+        "github-copilot/gpt-4o-mini-2024-07-18": {
+          "name": "gpt-4o-mini-2024-07-18 [Copilot]"
+        },
+        "github-copilot/gpt-5-mini": {
+          "name": "gpt-5-mini [Copilot]"
+        },
+        "github-copilot/gpt-5.3-codex": {
+          "name": "gpt-5.3-codex [Copilot]"
+        },
+        "github-copilot/gpt-5.4": {
+          "name": "GPT-5.4 [Copilot]"
+        },
+        "github-copilot/gpt-5.4-mini": {
+          "name": "gpt-5.4-mini [Copilot]"
+        },
+        "github-copilot/text-embedding-3-small": {
+          "name": "text-embedding-3-small [Copilot]"
+        },
+        "github-copilot/text-embedding-3-small-inference": {
+          "name": "text-embedding-3-small-inference [Copilot]"
+        },
+        "github-copilot/text-embedding-ada-002": {
+          "name": "text-embedding-ada-002 [Copilot]"
+        },
+        "openai/babbage-002": {
+          "name": "babbage-002 [OpenAI]"
+        },
+        "openai/chat-latest": {
+          "name": "chat-latest [OpenAI]"
+        },
+        "openai/chatgpt-image-latest": {
+          "name": "chatgpt-image-latest [OpenAI]"
+        },
+        "openai/davinci-002": {
+          "name": "davinci-002 [OpenAI]"
+        },
+        "openai/gpt-3.5-turbo": {
+          "name": "gpt-3.5-turbo [OpenAI]"
+        },
+        "openai/gpt-3.5-turbo-0125": {
+          "name": "gpt-3.5-turbo-0125 [OpenAI]"
+        },
+        "openai/gpt-3.5-turbo-1106": {
+          "name": "gpt-3.5-turbo-1106 [OpenAI]"
+        },
+        "openai/gpt-3.5-turbo-16k": {
+          "name": "gpt-3.5-turbo-16k [OpenAI]"
+        },
+        "openai/gpt-3.5-turbo-instruct": {
+          "name": "gpt-3.5-turbo-instruct [OpenAI]"
+        },
+        "openai/gpt-3.5-turbo-instruct-0914": {
+          "name": "gpt-3.5-turbo-instruct-0914 [OpenAI]"
+        },
+        "openai/gpt-4.1": {
+          "name": "GPT-4.1 [OpenAI]"
+        },
+        "openai/gpt-4.1-2025-04-14": {
+          "name": "gpt-4.1-2025-04-14 [OpenAI]"
+        },
+        "openai/gpt-4.1-mini": {
+          "name": "gpt-4.1-mini [OpenAI]"
+        },
+        "openai/gpt-4.1-mini-2025-04-14": {
+          "name": "gpt-4.1-mini-2025-04-14 [OpenAI]"
+        },
+        "openai/gpt-4.1-nano": {
+          "name": "gpt-4.1-nano [OpenAI]"
+        },
+        "openai/gpt-4.1-nano-2025-04-14": {
+          "name": "gpt-4.1-nano-2025-04-14 [OpenAI]"
+        },
+        "openai/gpt-4o": {
+          "name": "GPT-4o [OpenAI]"
+        },
+        "openai/gpt-4o-2024-05-13": {
+          "name": "gpt-4o-2024-05-13 [OpenAI]"
+        },
+        "openai/gpt-4o-2024-08-06": {
+          "name": "gpt-4o-2024-08-06 [OpenAI]"
+        },
+        "openai/gpt-4o-2024-11-20": {
+          "name": "gpt-4o-2024-11-20 [OpenAI]"
+        },
+        "openai/gpt-4o-mini": {
+          "name": "GPT-4o Mini [OpenAI]"
+        },
+        "openai/gpt-4o-mini-2024-07-18": {
+          "name": "gpt-4o-mini-2024-07-18 [OpenAI]"
+        },
+        "openai/gpt-4o-mini-search-preview": {
+          "name": "gpt-4o-mini-search-preview [OpenAI]"
+        },
+        "openai/gpt-4o-mini-search-preview-2025-03-11": {
+          "name": "gpt-4o-mini-search-preview-2025-03-11 [OpenAI]"
+        },
+        "openai/gpt-4o-mini-transcribe": {
+          "name": "gpt-4o-mini-transcribe [OpenAI]"
+        },
+        "openai/gpt-4o-mini-transcribe-2025-03-20": {
+          "name": "gpt-4o-mini-transcribe-2025-03-20 [OpenAI]"
+        },
+        "openai/gpt-4o-mini-transcribe-2025-12-15": {
+          "name": "gpt-4o-mini-transcribe-2025-12-15 [OpenAI]"
+        },
+        "openai/gpt-4o-mini-tts": {
+          "name": "gpt-4o-mini-tts [OpenAI]"
+        },
+        "openai/gpt-4o-mini-tts-2025-03-20": {
+          "name": "gpt-4o-mini-tts-2025-03-20 [OpenAI]"
+        },
+        "openai/gpt-4o-mini-tts-2025-12-15": {
+          "name": "gpt-4o-mini-tts-2025-12-15 [OpenAI]"
+        },
+        "openai/gpt-4o-search-preview": {
+          "name": "gpt-4o-search-preview [OpenAI]"
+        },
+        "openai/gpt-4o-search-preview-2025-03-11": {
+          "name": "gpt-4o-search-preview-2025-03-11 [OpenAI]"
+        },
+        "openai/gpt-4o-transcribe": {
+          "name": "gpt-4o-transcribe [OpenAI]"
+        },
+        "openai/gpt-4o-transcribe-diarize": {
+          "name": "gpt-4o-transcribe-diarize [OpenAI]"
+        },
+        "openai/gpt-5": {
+          "name": "gpt-5 [OpenAI]"
+        },
+        "openai/gpt-5-2025-08-07": {
+          "name": "gpt-5-2025-08-07 [OpenAI]"
+        },
+        "openai/gpt-5-chat-latest": {
+          "name": "gpt-5-chat-latest [OpenAI]"
+        },
+        "openai/gpt-5-codex": {
+          "name": "gpt-5-codex [OpenAI]"
+        },
+        "openai/gpt-5-mini": {
+          "name": "gpt-5-mini [OpenAI]"
+        },
+        "openai/gpt-5-mini-2025-08-07": {
+          "name": "gpt-5-mini-2025-08-07 [OpenAI]"
+        },
+        "openai/gpt-5-nano": {
+          "name": "gpt-5-nano [OpenAI]"
+        },
+        "openai/gpt-5-nano-2025-08-07": {
+          "name": "gpt-5-nano-2025-08-07 [OpenAI]"
+        },
+        "openai/gpt-5-pro": {
+          "name": "gpt-5-pro [OpenAI]"
+        },
+        "openai/gpt-5-pro-2025-10-06": {
+          "name": "gpt-5-pro-2025-10-06 [OpenAI]"
+        },
+        "openai/gpt-5-search-api": {
+          "name": "gpt-5-search-api [OpenAI]"
+        },
+        "openai/gpt-5-search-api-2025-10-14": {
+          "name": "gpt-5-search-api-2025-10-14 [OpenAI]"
+        },
+        "openai/gpt-5.1": {
+          "name": "gpt-5.1 [OpenAI]"
+        },
+        "openai/gpt-5.1-2025-11-13": {
+          "name": "gpt-5.1-2025-11-13 [OpenAI]"
+        },
+        "openai/gpt-5.1-chat-latest": {
+          "name": "gpt-5.1-chat-latest [OpenAI]"
+        },
+        "openai/gpt-5.1-codex": {
+          "name": "gpt-5.1-codex [OpenAI]"
+        },
+        "openai/gpt-5.1-codex-max": {
+          "name": "gpt-5.1-codex-max [OpenAI]"
+        },
+        "openai/gpt-5.1-codex-mini": {
+          "name": "gpt-5.1-codex-mini [OpenAI]"
+        },
+        "openai/gpt-5.2": {
+          "name": "gpt-5.2 [OpenAI]"
+        },
+        "openai/gpt-5.2-2025-12-11": {
+          "name": "gpt-5.2-2025-12-11 [OpenAI]"
+        },
+        "openai/gpt-5.2-chat-latest": {
+          "name": "gpt-5.2-chat-latest [OpenAI]"
+        },
+        "openai/gpt-5.2-codex": {
+          "name": "gpt-5.2-codex [OpenAI]"
+        },
+        "openai/gpt-5.2-pro": {
+          "name": "gpt-5.2-pro [OpenAI]"
+        },
+        "openai/gpt-5.2-pro-2025-12-11": {
+          "name": "gpt-5.2-pro-2025-12-11 [OpenAI]"
+        },
+        "openai/gpt-5.3-chat-latest": {
+          "name": "gpt-5.3-chat-latest [OpenAI]"
+        },
+        "openai/gpt-5.3-codex": {
+          "name": "gpt-5.3-codex [OpenAI]"
+        },
+        "openai/gpt-5.4": {
+          "name": "gpt-5.4 [OpenAI]"
+        },
+        "openai/gpt-5.4-2026-03-05": {
+          "name": "gpt-5.4-2026-03-05 [OpenAI]"
+        },
+        "openai/gpt-5.4-mini": {
+          "name": "gpt-5.4-mini [OpenAI]"
+        },
+        "openai/gpt-5.4-mini-2026-03-17": {
+          "name": "gpt-5.4-mini-2026-03-17 [OpenAI]"
+        },
+        "openai/gpt-5.4-nano": {
+          "name": "gpt-5.4-nano [OpenAI]"
+        },
+        "openai/gpt-5.4-nano-2026-03-17": {
+          "name": "gpt-5.4-nano-2026-03-17 [OpenAI]"
+        },
+        "openai/gpt-5.4-pro": {
+          "name": "gpt-5.4-pro [OpenAI]"
+        },
+        "openai/gpt-5.4-pro-2026-03-05": {
+          "name": "gpt-5.4-pro-2026-03-05 [OpenAI]"
+        },
+        "openai/gpt-5.5": {
+          "name": "gpt-5.5 [OpenAI]"
+        },
+        "openai/gpt-5.5-2026-04-23": {
+          "name": "gpt-5.5-2026-04-23 [OpenAI]"
+        },
+        "openai/gpt-5.5-pro": {
+          "name": "gpt-5.5-pro [OpenAI]"
+        },
+        "openai/gpt-5.5-pro-2026-04-23": {
+          "name": "gpt-5.5-pro-2026-04-23 [OpenAI]"
+        },
+        "openai/gpt-audio": {
+          "name": "gpt-audio [OpenAI]"
+        },
+        "openai/gpt-audio-1.5": {
+          "name": "gpt-audio-1.5 [OpenAI]"
+        },
+        "openai/gpt-audio-2025-08-28": {
+          "name": "gpt-audio-2025-08-28 [OpenAI]"
+        },
+        "openai/gpt-audio-mini": {
+          "name": "gpt-audio-mini [OpenAI]"
+        },
+        "openai/gpt-audio-mini-2025-10-06": {
+          "name": "gpt-audio-mini-2025-10-06 [OpenAI]"
+        },
+        "openai/gpt-audio-mini-2025-12-15": {
+          "name": "gpt-audio-mini-2025-12-15 [OpenAI]"
+        },
+        "openai/gpt-image-1": {
+          "name": "gpt-image-1 [OpenAI]"
+        },
+        "openai/gpt-image-1-mini": {
+          "name": "gpt-image-1-mini [OpenAI]"
+        },
+        "openai/gpt-image-1.5": {
+          "name": "gpt-image-1.5 [OpenAI]"
+        },
+        "openai/gpt-image-2": {
+          "name": "gpt-image-2 [OpenAI]"
+        },
+        "openai/gpt-image-2-2026-04-21": {
+          "name": "gpt-image-2-2026-04-21 [OpenAI]"
+        },
+        "openai/gpt-realtime": {
+          "name": "gpt-realtime [OpenAI]"
+        },
+        "openai/gpt-realtime-1.5": {
+          "name": "gpt-realtime-1.5 [OpenAI]"
+        },
+        "openai/gpt-realtime-2": {
+          "name": "gpt-realtime-2 [OpenAI]"
+        },
+        "openai/gpt-realtime-2025-08-28": {
+          "name": "gpt-realtime-2025-08-28 [OpenAI]"
+        },
+        "openai/gpt-realtime-mini": {
+          "name": "gpt-realtime-mini [OpenAI]"
+        },
+        "openai/gpt-realtime-mini-2025-10-06": {
+          "name": "gpt-realtime-mini-2025-10-06 [OpenAI]"
+        },
+        "openai/gpt-realtime-mini-2025-12-15": {
+          "name": "gpt-realtime-mini-2025-12-15 [OpenAI]"
+        },
+        "openai/gpt-realtime-translate": {
+          "name": "gpt-realtime-translate [OpenAI]"
+        },
+        "openai/gpt-realtime-whisper": {
+          "name": "gpt-realtime-whisper [OpenAI]"
+        },
+        "openai/o1": {
+          "name": "o1 [OpenAI]"
+        },
+        "openai/o1-2024-12-17": {
+          "name": "o1-2024-12-17 [OpenAI]"
+        },
+        "openai/o3": {
+          "name": "o3 [OpenAI]"
+        },
+        "openai/o3-2025-04-16": {
+          "name": "o3-2025-04-16 [OpenAI]"
+        },
+        "openai/o3-mini": {
+          "name": "o3-mini [OpenAI]"
+        },
+        "openai/o3-mini-2025-01-31": {
+          "name": "o3-mini-2025-01-31 [OpenAI]"
+        },
+        "openai/o4-mini": {
+          "name": "o4-mini [OpenAI]"
+        },
+        "openai/o4-mini-2025-04-16": {
+          "name": "o4-mini-2025-04-16 [OpenAI]"
+        },
+        "openai/omni-moderation-2024-09-26": {
+          "name": "omni-moderation-2024-09-26 [OpenAI]"
+        },
+        "openai/omni-moderation-latest": {
+          "name": "omni-moderation-latest [OpenAI]"
+        },
+        "openai/sora-2": {
+          "name": "sora-2 [OpenAI]"
+        },
+        "openai/sora-2-pro": {
+          "name": "sora-2-pro [OpenAI]"
+        },
+        "openai/text-embedding-3-large": {
+          "name": "text-embedding-3-large [OpenAI]"
+        },
+        "openai/text-embedding-3-small": {
+          "name": "text-embedding-3-small [OpenAI]"
+        },
+        "openai/text-embedding-ada-002": {
+          "name": "text-embedding-ada-002 [OpenAI]"
+        },
+        "openai/tts-1": {
+          "name": "tts-1 [OpenAI]"
+        },
+        "openai/tts-1-1106": {
+          "name": "tts-1-1106 [OpenAI]"
+        },
+        "openai/tts-1-hd": {
+          "name": "tts-1-hd [OpenAI]"
+        },
+        "openai/tts-1-hd-1106": {
+          "name": "tts-1-hd-1106 [OpenAI]"
+        },
+        "openai/whisper-1": {
+          "name": "whisper-1 [OpenAI]"
+        }
       }
     },
     "anthropic": {
