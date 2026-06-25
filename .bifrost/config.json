@@ -1,0 +1,19 @@
+{
+  "base_url": "http://localhost:8080",
+  "virtual_key": "",
+  "default_harness": "opencode",
+  "default_model": "github-copilot/gpt-4o-mini",
+  "auto_install_harness": null,
+  "auto_attach_mcp": null,
+  "auto_discovered_models": [
+    "anthropic/claude-haiku-4-5",
+    "anthropic/claude-opus-4-6",
+    "anthropic/claude-opus-4-7",
+    "anthropic/claude-opus-4-8",
+    "anthropic/claude-sonnet-4-6"
+  ],
+  "available_providers": [
+    "anthropic"
+  ],
+  "discovered_at": "2026-06-23T20:35:48Z"
+}

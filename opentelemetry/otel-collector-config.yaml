@@ -2,17 +2,17 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:4317
+        endpoint: ${env:OTLP_GRPC_ENDPOINT}
       http:
-        endpoint: 0.0.0.0:4318
+        endpoint: ${env:OTLP_HTTP_ENDPOINT}
 
 exporters:
   # ClickHouse exporter for durable telemetry storage
   clickhouse:
-    endpoint: tcp://clickhouse:9000
-    username: default
-    password: ""
-    database: otel
+    endpoint: ${env:CLICKHOUSE_ENDPOINT}
+    username: ${env:CLICKHOUSE_USERNAME}
+    password: ${env:CLICKHOUSE_PASSWORD}
+    database: ${env:CLICKHOUSE_DATABASE}
     ttl: 72h
     traces_table_name: otel_traces
     metrics_table_name: otel_metrics
@@ -32,26 +32,26 @@ exporters:
 
 processors:
   batch:
-    timeout: 10s
-    send_batch_size: 1000
+    timeout: ${env:OTEL_BATCH_TIMEOUT}
+    send_batch_size: ${env:OTEL_BATCH_SEND_SIZE}
   memory_limiter:
     check_interval: 1s
-    limit_mib: 512
-    spike_limit_mib: 128
+    limit_mib: ${env:OTEL_MEMORY_LIMIT_MIB}
+    spike_limit_mib: ${env:OTEL_SPIKE_LIMIT_MIB}
 
 extensions:
   health_check:
-    endpoint: 0.0.0.0:13133
+    endpoint: ${env:OTEL_COLLECTOR_HEALTH_ENDPOINT}
   pprof:
-    endpoint: 0.0.0.0:1777
+    endpoint: ${env:OTEL_COLLECTOR_PPROF_ENDPOINT}
 
 service:
   extensions: [health_check, pprof]
   telemetry:
     logs:
-      level: info
+      level: ${env:OTEL_LOG_LEVEL}
     metrics:
-      level: detailed
+      level: ${env:OTEL_METRICS_LEVEL}
   pipelines:
     traces:
       receivers: [otlp]

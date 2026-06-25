@@ -15,7 +15,8 @@ services:
       - APP_HOST=0.0.0.0
       - LOG_LEVEL=info
       - LOG_STYLE=pretty
-      - GH_TOKEN=${GH_TOKEN}
+    env_file:
+      - ./bifrost/.env
     depends_on:
       otel-collector:
         condition: service_started
@@ -37,8 +38,10 @@ services:
     container_name: otel-collector
     command:
       - "--config=/etc/otelcol-config.yaml"
+    env_file:
+      - ./opentelemetry/.env
     volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol-config.yaml
+      - ./opentelemetry/otel-collector-config.yaml:/etc/otelcol-config.yaml
     ports:
       - "4317:4317"          # OTLP gRPC
       - "4318:4318"          # OTLP HTTP
@@ -108,3 +111,4 @@ services:
 volumes:
   bifrost-data:
   clickhouse-data:
+

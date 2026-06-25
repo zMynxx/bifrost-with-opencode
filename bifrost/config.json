@@ -37,11 +37,46 @@
     }
   },
   "providers": {
-    "github-models": {
+    "openai": {
+      "keys": [
+        {
+          "name": "openai-key",
+          "value": "env.OPENAI_API_KEY",
+          "models": ["*"],
+          "weight": 1.0
+        }
+      ]
+    },
+    "gemini": {
+      "keys": [
+        {
+          "name": "gemini-key",
+          "value": "env.GEMINI_API_KEY",
+          "models": ["*"],
+          "weight": 1.0
+        }
+      ]
+    },
+    "bedrock": {
+      "keys": [
+        {
+          "name": "bedrock-key",
+          "models": ["*"],
+          "weight": 1.0,
+          "aliases": {
+            "claude-sonnet-4": "us.anthropic.claude-sonnet-4-20250514-v1:0"
+          },
+          "bedrock_key_config": {
+            "access_key": "env.AWS_ACCESS_KEY_ID",
+            "secret_key": "env.AWS_SECRET_ACCESS_KEY",
+            "session_token": "env.AWS_SESSION_TOKEN",
+            "region": "env.AWS_REGION"
+    },
+    "github-copilot": {
       "keys": [
         {
           "name": "github-models-key",
-          "value": "env.GH_TOKEN",
+          "value": "env.GITHUB_API_KEY",
           "models": ["*"],
           "weight": 1.0
         }
@@ -54,13 +89,18 @@
         "base_provider_type": "openai",
         "request_path_overrides": {
           "chat_completion": "/chat/completions",
-          "chat_completion_stream": "/chat/completions"
+          "chat_completion_stream": "/chat/completions",
+          "list_models": "/models"
         },
         "allowed_requests": {
           "chat_completion": true,
-          "chat_completion_stream": true
+          "chat_completion_stream": true,
+          "list_models": true
         }
       }
+    }
+  }
+      ]
     }
   }
 }
