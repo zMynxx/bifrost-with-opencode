@@ -3,7 +3,7 @@
 # ─────────────────────────────────────────────────────
 
 # Use Podman socket (not Docker Desktop)
-export DOCKER_HOST := "unix:///var/run/docker.sock"
+export DOCKER_HOST := "unix:///var/folders/8m/8m1bs90921dgjnrq48v931p80000gp/T/podman/podman-machine-default-api.sock"
 export DOCKER_CONFIG := "/tmp"
 
 # ── Modular Justfiles ────────────────────────────────
